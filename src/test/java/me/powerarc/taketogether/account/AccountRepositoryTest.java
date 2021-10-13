@@ -26,8 +26,8 @@ class AccountRepositoryTest {
     public void crud() {
         // Given
         // Create
-        Account account1 = creatAccount("test1@test.com");
-        Account account2 = creatAccount("test2@test.com");
+        Account account1 = createAccount("test1@test.com");
+        Account account2 = createAccount("test2@test.com");
         account1 = accountRepository.save(account1);
         account2 = accountRepository.save(account2);
 
@@ -80,10 +80,10 @@ class AccountRepositoryTest {
         return event;
     }
 
-    private Account creatAccount(String email) {
+    private Account createAccount(String email) {
         Account account = Account.builder()
                 .email(email)
-                .pass("pass")
+                .password("pass")
                 .hostEvents(new HashSet<>())
                 .name("admin")
                 .participantEvents(new HashSet<>())
