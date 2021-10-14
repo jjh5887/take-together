@@ -230,14 +230,70 @@ class EventControllerTest {
         assertThat(byIdAccount).isNotEmpty();
     }
 
+    @Test
+    public void createEvent_Bad_Request_Wrong_ArrivalTime() throws Exception {
+        // Given
+        Account account = makeAccount("test@test.com");
+        EventDto eventDto = makeEventDto(account, "test", "testStart", "testEnd");
+        eventDto.setArrivalTime(eventDto.getDepartureTime().minusHours(3));
+
+        // Then
+        mockMvc.perform(post("/event/" + account.getEmail())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(eventDto)))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$[0].objectName", is("eventDto")))
+                .andExpect(jsonPath("$[0].code", is("wrongArrivalTime")))
+                .andExpect(jsonPath("$[0].defaultMessage", is("Arrival time is earlier than departure time")))
+        ;
+    }
+
+    @Test
+    public void createEvent_Bad_Request_Wrong_Participants() throws Exception {
+        // Given
+        Account account = makeAccount("test@test.com");
+        EventDto eventDto = makeEventDto(account, "test2", "test2Start", "test2End");
+        eventDto.addParticipants(makeAccount("test2@test.com"));
+        eventDto.addParticipants(makeAccount("test3@test.com"));
+        eventDto.addParticipants(makeAccount("test4@test.com"));
+        eventDto.addParticipants(makeAccount("test5@test.com"));
+
+        // Then
+        mockMvc.perform(post("/event/" + account.getEmail())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(eventDto)))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$[0].objectName", is("eventDto")))
+                .andExpect(jsonPath("$[0].code", is("wrongParticipants")))
+                .andExpect(jsonPath("$[0].defaultMessage", is("The number of participants has exceeded")))
+        ;
+    }
+
+
+    @Test
+    public void createEvent_Bad_Request_Empty_Input() throws Exception {
+        // Given
+        Account account = makeAccount("test@test.com");
+        EventDto eventDto = new EventDto();
+
+        // Then
+        mockMvc.perform(post("/event/" + account.getEmail())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(eventDto)))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+        ;
+    }
 
     private Event makeEvent(Account account, String name, String departure, String destination) {
         Event event = Event.builder()
                 .name(name)
                 .departure(departure)
                 .destination(destination)
-                .arrivalTime(LocalDateTime.of(2021, 10, 12, 8, 0, 1))
-                .departureTime(LocalDateTime.of(2021, 10, 12, 8, 45, 1))
+                .departureTime(LocalDateTime.of(2021, 10, 12, 8, 0, 1))
+                .arrivalTime(LocalDateTime.of(2021, 10, 12, 8, 45, 1))
                 .host(account)
                 .participants(new HashSet<>(Set.of(account)))
                 .nowNum(1)
@@ -253,11 +309,10 @@ class EventControllerTest {
                 .name(name)
                 .departure(departure)
                 .destination(destination)
-                .arrivalTime(LocalDateTime.of(2021, 10, 12, 8, 0, 1))
-                .departureTime(LocalDateTime.of(2021, 10, 12, 8, 45, 1))
+                .departureTime(LocalDateTime.of(2021, 10, 12, 8, 0, 1))
+                .arrivalTime(LocalDateTime.of(2021, 10, 12, 8, 45, 1))
                 .host(account)
                 .participants(new HashSet<>(Set.of(account)))
-                .nowNum(1)
                 .price(5000)
                 .totalNum(4)
                 .build();
