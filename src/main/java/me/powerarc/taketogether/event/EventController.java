@@ -4,8 +4,10 @@ import lombok.RequiredArgsConstructor;
 import me.powerarc.taketogether.account.AccountService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.Errors;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -14,9 +16,16 @@ import java.util.List;
 public class EventController {
     private final EventService eventService;
     private final AccountService accountService;
+    private final EventValidator eventValidator;
 
     @PostMapping("/{email}")
-    public ResponseEntity createEvent(@RequestBody EventDto eventDto, @PathVariable String email) throws Exception {
+    public ResponseEntity createEvent(@RequestBody @Valid EventDto eventDto, Errors errors, @PathVariable String email) throws Exception {
+        if (errors.hasErrors()) {
+            return ResponseEntity.badRequest().body(errors);
+        }
+        eventValidator.validate(eventDto, errors);
+        if (errors.hasErrors()) return ResponseEntity.badRequest().body(errors);
+
         Event events = eventService.createEvent(eventDto, accountService.getAccount(email));
         if (events == null) return ResponseEntity.badRequest().body("error");
         return ResponseEntity.ok(events);
@@ -51,7 +60,11 @@ public class EventController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity updateEvent(@RequestBody EventDto eventDto, @PathVariable Long id) throws Exception {
+    public ResponseEntity updateEvent(@RequestBody @Valid EventDto eventDto, Errors errors, @PathVariable Long id) throws Exception {
+        if (errors.hasErrors()) return ResponseEntity.badRequest().body(errors);
+        eventValidator.validate(eventDto, errors);
+        if (errors.hasErrors()) return ResponseEntity.badRequest().body(errors);
+
         Event event = eventService.updateEvent(eventDto, id);
         if (event == null) return ResponseEntity.badRequest().body("error");
         return ResponseEntity.ok(event);

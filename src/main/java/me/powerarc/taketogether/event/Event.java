@@ -50,6 +50,7 @@ public class Event {
 
     public void addParticipants(Account account) {
         participants.add(account);
+        nowNum = participants.size();
     }
 
 }
