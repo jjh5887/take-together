@@ -3,6 +3,7 @@ package me.powerarc.taketogether.event;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import me.powerarc.taketogether.account.Account;
 import me.powerarc.taketogether.account.AccountRepository;
+import me.powerarc.taketogether.account.AccountRole;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.modelmapper.ModelMapper;
@@ -32,12 +33,16 @@ class EventControllerTest {
 
     @Autowired
     EventRepository eventRepository;
+
     @Autowired
     AccountRepository accountRepository;
+
     @Autowired
     ObjectMapper objectMapper;
+
     @Autowired
     ModelMapper modelMapper;
+
     @Autowired
     MockMvc mockMvc;
 
@@ -328,6 +333,7 @@ class EventControllerTest {
                 .hostEvents(new HashSet<>())
                 .name("admin")
                 .participantEvents(new HashSet<>())
+                .roles(new HashSet<>(Set.of(AccountRole.ADMIN)))
                 .build();
         return accountRepository.save(account);
     }

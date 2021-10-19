@@ -80,7 +80,7 @@ public class EventService {
         Event savedEvent = eventRepository.save(event);
 
         account.addEvent(event);
-        accountService.updateAccount(account);
+//        accountService.updateAccount(account);
         return savedEvent;
     }
 }
