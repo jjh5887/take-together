@@ -55,7 +55,7 @@ public class AccountController {
             return ResponseEntity.badRequest().body(errors);
         }
 
-        if (accountService.updateAccount(accountUpdateDto, request, jwtTokenProvider)) {
+        if (accountService.updateAccount(accountUpdateDto, accountService.getAccount(jwtTokenProvider.getUserEmail(request)))) {
             return ResponseEntity.ok(Map.of("message", "success"));
         }
 

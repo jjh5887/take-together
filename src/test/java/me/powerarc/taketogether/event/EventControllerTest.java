@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import me.powerarc.taketogether.account.Account;
 import me.powerarc.taketogether.account.AccountRepository;
 import me.powerarc.taketogether.account.AccountRole;
+import me.powerarc.taketogether.jwt.JwtTokenProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.modelmapper.ModelMapper;
@@ -11,11 +12,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -45,6 +48,12 @@ class EventControllerTest {
 
     @Autowired
     MockMvc mockMvc;
+
+    @Autowired
+    JwtTokenProvider jwtTokenProvider;
+
+    @Autowired
+    PasswordEncoder passwordEncoder;
 
     @BeforeEach
     public void setUp() {
@@ -158,8 +167,31 @@ class EventControllerTest {
         EventDto eventDto = makeEventDto(account, name, departure, destination);
 
         // Then
-        mockMvc.perform(post("/event/" + email)
+        mockMvc.perform(post("/event")
                 .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(eventDto)))
+                .andDo(print())
+                .andExpect(status().isForbidden())
+        ;
+    }
+
+    @Test
+    public void createEvent_with_authentication() throws Exception {
+        // Given
+        String email = "test@test.com";
+        Account account = makeAccount(email);
+        int id = Math.toIntExact(account.getId());
+        String name = "test";
+        String departure = "Incheon";
+        String destination = "Seoul";
+        EventDto eventDto = makeEventDto(account, name, departure, destination);
+
+        String token = jwtTokenProvider.createToken(email);
+
+        // Then
+        mockMvc.perform(post("/event")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("X-AUTH-TOKEN", token)
                 .content(objectMapper.writeValueAsString(eventDto)))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -170,6 +202,10 @@ class EventControllerTest {
                 .andExpect(jsonPath("$.participants[0].id", is(id)))
         ;
 
+        List<Event> byNameContains = eventRepository.findByNameContains(eventDto.getName());
+        byNameContains.forEach(a -> {
+            System.out.println(a.getName());
+        });
     }
 
     @Test
@@ -185,19 +221,13 @@ class EventControllerTest {
         Account newAccount = makeAccount(newEmail);
         String newName = "after";
         EventDto eventDto = makeEventDto(newAccount, newName, newName + " dep", newName + " dest");
-        int id = Math.toIntExact(newAccount.getId());
 
         // Then
         mockMvc.perform(put("/event/" + event.getId())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(eventDto)))
                 .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("name", is(eventDto.getName())))
-                .andExpect(jsonPath("departure", is(eventDto.getDeparture())))
-                .andExpect(jsonPath("destination", is(eventDto.getDestination())))
-                .andExpect(jsonPath("$.host.id", is(id)))
-                .andExpect(jsonPath("$.participants[0].id", is(id)))
+                .andExpect(status().isForbidden())
         ;
 
         // Given
@@ -211,6 +241,52 @@ class EventControllerTest {
     }
 
     @Test
+    public void updateEvent_with_authentication() throws Exception {
+        // Given
+        String email = "test@test.com";
+        Account account = makeAccount(email);
+
+        String name = "before";
+        Event event = makeEvent(account, name, name + " dep", name + " dest");
+
+        String newEmail = "newTest@test.com";
+        Account newAccount = makeAccount(newEmail);
+        String newName = "after";
+        EventDto eventDto = makeEventDto(newAccount, newName, newName + " dep", newName + " dest");
+
+        String token = jwtTokenProvider.createToken(email);
+
+        // Then
+        mockMvc.perform(put("/event/" + event.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("X-AUTH-TOKEN", token)
+                .content(objectMapper.writeValueAsString(eventDto)))
+                .andDo(print())
+                .andExpect(status().isOk())
+        ;
+
+        // Given
+        Event byId = eventRepository.findById(event.getId()).get();
+
+        // Then
+        assertThat(byId.getHost().getEmail()).isEqualTo(newAccount.getEmail());
+        assertThat(byId.getHost().getId()).isEqualTo(newAccount.getId());
+        assertThat(byId.getId()).isEqualTo(event.getId());
+        assertThat(byId.getName()).isEqualTo(eventDto.getName());
+        assertThat(byId.getDeparture()).isEqualTo(eventDto.getDeparture());
+        assertThat(byId.getDepartureTime()).isEqualTo(eventDto.getDepartureTime());
+
+
+        // Given
+        Account byIdAccount = accountRepository.findById(account.getId()).get();
+        Account byIdNewAccount = accountRepository.findById(newAccount.getId()).get();
+
+        // Then
+        assertThat(byIdAccount).isEqualTo(account);
+        assertThat(byIdNewAccount).isEqualTo(newAccount);
+    }
+
+    @Test
     public void deleteEvent() throws Exception {
         // Given
         Account account = makeAccount("test@test.com");
@@ -218,6 +294,35 @@ class EventControllerTest {
 
         mockMvc.perform(delete("/event/" + event.getId())
                 .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isForbidden())
+        ;
+
+        // Then
+        mockMvc.perform(get("/event/id/" + event.getId())
+                .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        Optional<Event> byId = eventRepository.findById(event.getId());
+        assertThat(byId).isPresent();
+
+        Optional<Account> byIdAccount = accountRepository.findById(account.getId());
+        assertThat(byIdAccount).isNotEmpty();
+    }
+
+    @Test
+    public void deleteEvent_with_authentication() throws Exception {
+        // Given
+        String email = "test@test.com";
+        Account account = makeAccount(email);
+        Event event = makeEvent(account, "name", "depa", "dest");
+
+        String token = jwtTokenProvider.createToken(email);
+
+        mockMvc.perform(delete("/event/" + event.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("X-AUTH-TOKEN", token))
                 .andDo(print())
                 .andExpect(status().isOk())
         ;
@@ -238,13 +343,17 @@ class EventControllerTest {
     @Test
     public void createEvent_Bad_Request_Wrong_ArrivalTime() throws Exception {
         // Given
-        Account account = makeAccount("test@test.com");
+        String email = "test@test.com";
+        Account account = makeAccount(email);
         EventDto eventDto = makeEventDto(account, "test", "testStart", "testEnd");
         eventDto.setArrivalTime(eventDto.getDepartureTime().minusHours(3));
 
+        String token = jwtTokenProvider.createToken(email);
+
         // Then
-        mockMvc.perform(post("/event/" + account.getEmail())
+        mockMvc.perform(post("/event")
                 .contentType(MediaType.APPLICATION_JSON)
+                .header("X-AUTH-TOKEN", token)
                 .content(objectMapper.writeValueAsString(eventDto)))
                 .andDo(print())
                 .andExpect(status().isBadRequest())
@@ -257,16 +366,20 @@ class EventControllerTest {
     @Test
     public void createEvent_Bad_Request_Wrong_Participants() throws Exception {
         // Given
-        Account account = makeAccount("test@test.com");
+        String email = "test@test.com";
+        Account account = makeAccount(email);
         EventDto eventDto = makeEventDto(account, "test2", "test2Start", "test2End");
         eventDto.addParticipants(makeAccount("test2@test.com"));
         eventDto.addParticipants(makeAccount("test3@test.com"));
         eventDto.addParticipants(makeAccount("test4@test.com"));
         eventDto.addParticipants(makeAccount("test5@test.com"));
 
+        String token = jwtTokenProvider.createToken(email);
+
         // Then
-        mockMvc.perform(post("/event/" + account.getEmail())
+        mockMvc.perform(post("/event")
                 .contentType(MediaType.APPLICATION_JSON)
+                .header("X-AUTH-TOKEN", token)
                 .content(objectMapper.writeValueAsString(eventDto)))
                 .andDo(print())
                 .andExpect(status().isBadRequest())
@@ -276,16 +389,19 @@ class EventControllerTest {
         ;
     }
 
-
     @Test
     public void createEvent_Bad_Request_Empty_Input() throws Exception {
         // Given
-        Account account = makeAccount("test@test.com");
+        String email = "test@test.com";
+        Account account = makeAccount(email);
         EventDto eventDto = new EventDto();
 
+        String token = jwtTokenProvider.createToken(email);
+
         // Then
-        mockMvc.perform(post("/event/" + account.getEmail())
+        mockMvc.perform(post("/event")
                 .contentType(MediaType.APPLICATION_JSON)
+                .header("X-AUTH-TOKEN", token)
                 .content(objectMapper.writeValueAsString(eventDto)))
                 .andDo(print())
                 .andExpect(status().isBadRequest())
@@ -335,6 +451,10 @@ class EventControllerTest {
                 .participantEvents(new HashSet<>())
                 .roles(new HashSet<>(Set.of(AccountRole.ADMIN)))
                 .build();
-        return accountRepository.save(account);
+
+        account.encodePassword(passwordEncoder);
+        Account save = accountRepository.save(account);
+        save.setPassword("pass");
+        return save;
     }
 }
