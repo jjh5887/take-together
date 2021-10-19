@@ -38,10 +38,7 @@ public class AccountService implements UserDetailsService {
         return accountRepository.findByEmail(email).orElseThrow(Exception::new);
     }
 
-    public boolean updateAccount(AccountUpdateDto accountUpdateDto, HttpServletRequest request, JwtTokenProvider jwtTokenProvider) throws Exception {
-        String token = this.jwtTokenProvider.resolveToken(request);
-        String userEmail = this.jwtTokenProvider.getUserEmail(token);
-        Account account = getAccount(userEmail);
+    public boolean updateAccount(AccountUpdateDto accountUpdateDto, Account account) throws Exception {
         if (passwordEncoder.matches(accountUpdateDto.getPassword(), account.getPassword())) {
             modelMapper.map(accountUpdateDto, account);
             accountRepository.save(account);

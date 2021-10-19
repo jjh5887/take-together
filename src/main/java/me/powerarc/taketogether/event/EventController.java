@@ -1,12 +1,15 @@
 package me.powerarc.taketogether.event;
 
 import lombok.RequiredArgsConstructor;
+import me.powerarc.taketogether.account.Account;
 import me.powerarc.taketogether.account.AccountService;
+import me.powerarc.taketogether.jwt.JwtTokenProvider;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.Errors;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.util.List;
 
@@ -16,17 +19,20 @@ import java.util.List;
 public class EventController {
     private final EventService eventService;
     private final AccountService accountService;
+    private final JwtTokenProvider jwtTokenProvider;
     private final EventValidator eventValidator;
 
-    @PostMapping("/{email}")
-    public ResponseEntity createEvent(@RequestBody @Valid EventDto eventDto, Errors errors, @PathVariable String email) throws Exception {
+    @PostMapping
+    public ResponseEntity createEvent(@RequestBody @Valid EventDto eventDto, Errors errors, HttpServletRequest request) throws Exception {
         if (errors.hasErrors()) {
             return ResponseEntity.badRequest().body(errors);
         }
         eventValidator.validate(eventDto, errors);
         if (errors.hasErrors()) return ResponseEntity.badRequest().body(errors);
 
-        Event events = eventService.createEvent(eventDto, accountService.getAccount(email));
+        Account account = accountService.getAccount(jwtTokenProvider.getUserEmail(request));
+        Event events = eventService.createEvent(eventDto, account);
+
         if (events == null) return ResponseEntity.badRequest().body("error");
         return ResponseEntity.ok(events);
     }
@@ -60,19 +66,22 @@ public class EventController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity updateEvent(@RequestBody @Valid EventDto eventDto, Errors errors, @PathVariable Long id) throws Exception {
+    public ResponseEntity updateEvent(@RequestBody @Valid EventDto eventDto, Errors errors, @PathVariable Long id, HttpServletRequest request) throws Exception {
         if (errors.hasErrors()) return ResponseEntity.badRequest().body(errors);
+
         eventValidator.validate(eventDto, errors);
         if (errors.hasErrors()) return ResponseEntity.badRequest().body(errors);
 
-        Event event = eventService.updateEvent(eventDto, id);
-        if (event == null) return ResponseEntity.badRequest().body("error");
-        return ResponseEntity.ok(event);
+        Account account = accountService.getAccount(jwtTokenProvider.getUserEmail(request));
+        if (!eventService.updateEvent(eventDto, id, account)) return ResponseEntity.badRequest().body("error");
+
+        return ResponseEntity.ok("ok");
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity deleteEvent(@PathVariable Long id) throws Exception {
-        if (!eventService.deleteEvent(id))
+    public ResponseEntity deleteEvent(@PathVariable Long id, HttpServletRequest request) throws Exception {
+        Account account = accountService.getAccount(jwtTokenProvider.getUserEmail(request));
+        if (!eventService.deleteEvent(id, account))
             return ResponseEntity.badRequest().body("error");
         return ResponseEntity.ok().body("ok");
     }
