@@ -1,10 +1,10 @@
 package me.powerarc.taketogether.account;
 
 import lombok.SneakyThrows;
-import me.powerarc.taketogether.account.dto.AccountDeleteDto;
-import me.powerarc.taketogether.account.dto.AccountLoginDto;
-import me.powerarc.taketogether.account.dto.AccountRegistDto;
-import me.powerarc.taketogether.account.dto.AccountUpdateDto;
+import me.powerarc.taketogether.account.request.AccountDeleteRequest;
+import me.powerarc.taketogether.account.request.AccountLoginRequest;
+import me.powerarc.taketogether.account.request.AccountRegistRequest;
+import me.powerarc.taketogether.account.request.AccountUpdateRequest;
 import me.powerarc.taketogether.jwt.JwtTokenProvider;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,9 +38,9 @@ public class AccountService implements UserDetailsService {
         return accountRepository.findByEmail(email).orElseThrow(Exception::new);
     }
 
-    public boolean updateAccount(AccountUpdateDto accountUpdateDto, Account account) throws Exception {
-        if (passwordEncoder.matches(accountUpdateDto.getPassword(), account.getPassword())) {
-            modelMapper.map(accountUpdateDto, account);
+    public boolean updateAccount(AccountUpdateRequest accountUpdateRequest, Account account) throws Exception {
+        if (passwordEncoder.matches(accountUpdateRequest.getPassword(), account.getPassword())) {
+            modelMapper.map(accountUpdateRequest, account);
             accountRepository.save(account);
             return true;
         }
@@ -53,9 +53,9 @@ public class AccountService implements UserDetailsService {
         return accountRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException(email));
     }
 
-    public boolean createAccount(AccountRegistDto accountRegistDto) {
-        if (!accountRepository.existsByEmail(accountRegistDto.getEmail())) {
-            Account account = modelMapper.map(accountRegistDto, Account.class);
+    public boolean createAccount(AccountRegistRequest accountRegistRequest) {
+        if (!accountRepository.existsByEmail(accountRegistRequest.getEmail())) {
+            Account account = modelMapper.map(accountRegistRequest, Account.class);
             account.encodePassword(passwordEncoder);
             account.addRole(AccountRole.USER);
             accountRepository.save(account);
@@ -64,17 +64,17 @@ public class AccountService implements UserDetailsService {
         return false;
     }
 
-    public boolean login(AccountLoginDto accountLoginDto) {
-        Account byEmail = accountRepository.findByEmail(accountLoginDto.getEmail())
-                .orElseThrow(() -> new UsernameNotFoundException(accountLoginDto.getEmail()));
-        return passwordEncoder.matches(accountLoginDto.getPassword(), byEmail.getPassword());
+    public boolean login(AccountLoginRequest accountLoginRequest) {
+        Account byEmail = accountRepository.findByEmail(accountLoginRequest.getEmail())
+                .orElseThrow(() -> new UsernameNotFoundException(accountLoginRequest.getEmail()));
+        return passwordEncoder.matches(accountLoginRequest.getPassword(), byEmail.getPassword());
     }
 
-    public boolean delete(AccountDeleteDto accountDeleteDto, HttpServletRequest request, JwtTokenProvider jwtTokenProvider) throws Exception {
+    public boolean delete(AccountDeleteRequest accountDeleteRequest, HttpServletRequest request, JwtTokenProvider jwtTokenProvider) throws Exception {
         String token = this.jwtTokenProvider.resolveToken(request);
         String userEmail = this.jwtTokenProvider.getUserEmail(token);
         Account account = getAccount(userEmail);
-        if (passwordEncoder.matches(accountDeleteDto.getPassword(), account.getPassword())) {
+        if (passwordEncoder.matches(accountDeleteRequest.getPassword(), account.getPassword())) {
             accountRepository.delete(account);
             return true;
         }

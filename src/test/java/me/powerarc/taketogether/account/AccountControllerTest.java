@@ -1,10 +1,10 @@
 package me.powerarc.taketogether.account;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import me.powerarc.taketogether.account.dto.AccountDeleteDto;
-import me.powerarc.taketogether.account.dto.AccountLoginDto;
-import me.powerarc.taketogether.account.dto.AccountRegistDto;
-import me.powerarc.taketogether.account.dto.AccountUpdateDto;
+import me.powerarc.taketogether.account.request.AccountDeleteRequest;
+import me.powerarc.taketogether.account.request.AccountLoginRequest;
+import me.powerarc.taketogether.account.request.AccountRegistRequest;
+import me.powerarc.taketogether.account.request.AccountUpdateRequest;
 import me.powerarc.taketogether.jwt.JwtTokenProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -12,6 +12,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -60,7 +61,7 @@ class AccountControllerTest {
     @Test
     public void regist() throws Exception {
         // Given
-        AccountRegistDto test = AccountRegistDto.builder()
+        AccountRegistRequest test = AccountRegistRequest.builder()
                 .email("test@test.com")
                 .password("1234")
                 .name("test")
@@ -72,7 +73,8 @@ class AccountControllerTest {
                 .content(objectMapper.writeValueAsString(test)))
                 .andDo(print())
                 .andExpect(status().isOk())
-
+                .andExpect(jsonPath("status", is(HttpStatus.OK.value())))
+                .andExpect(jsonPath("message", is("success")))
         ;
     }
 
@@ -82,7 +84,7 @@ class AccountControllerTest {
         Account account = makeAccount("test@test.com");
         saveAccount(account);
 
-        AccountRegistDto test = AccountRegistDto.builder()
+        AccountRegistRequest test = AccountRegistRequest.builder()
                 .email("test@test.com")
                 .password("1234")
                 .name("test")
@@ -94,13 +96,14 @@ class AccountControllerTest {
                 .content(objectMapper.writeValueAsString(test)))
                 .andDo(print())
                 .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("status", is(HttpStatus.BAD_REQUEST.value())))
                 .andExpect(jsonPath("message", is("이미 존재하는 이메일 입니다.")));
     }
 
     @Test
     public void regist_fail_empty() throws Exception {
         // Given
-        AccountRegistDto test = AccountRegistDto.builder()
+        AccountRegistRequest test = AccountRegistRequest.builder()
                 .build();
 
         // Then
@@ -109,10 +112,12 @@ class AccountControllerTest {
                 .content(objectMapper.writeValueAsString(test)))
                 .andDo(print())
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$[*].field").exists())
-                .andExpect(jsonPath("$[*].objectName").exists())
-                .andExpect(jsonPath("$[*].code").exists())
-                .andExpect(jsonPath("$[*].defaultMessage").exists())
+                .andExpect(jsonPath("status", is(HttpStatus.BAD_REQUEST.value())))
+                .andExpect(jsonPath("message", is("fail")))
+                .andExpect(jsonPath("$.errors[*].field").exists())
+                .andExpect(jsonPath("$.errors[*].objectName").exists())
+                .andExpect(jsonPath("$.errors[*].code").exists())
+                .andExpect(jsonPath("$.errors[*].defaultMessage").exists())
         ;
     }
 
@@ -122,14 +127,17 @@ class AccountControllerTest {
         Account account = makeAccount("test@test.com");
         saveAccount(account);
 
-        AccountLoginDto accountLoginDto = modelMapper.map(account, AccountLoginDto.class);
+        AccountLoginRequest accountLoginRequest = modelMapper.map(account, AccountLoginRequest.class);
 
         // Then
         mockMvc.perform(post("/account/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(accountLoginDto)))
+                .content(objectMapper.writeValueAsString(accountLoginRequest)))
                 .andDo(print())
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("status", is(HttpStatus.OK.value())))
+                .andExpect(jsonPath("message", is("success")))
+                .andExpect(jsonPath("token").isNotEmpty())
         ;
     }
 
@@ -140,14 +148,15 @@ class AccountControllerTest {
         saveAccount(account);
 
         account.setPassword(account.getPassword() + "test");
-        AccountLoginDto accountLoginDto = modelMapper.map(account, AccountLoginDto.class);
+        AccountLoginRequest accountLoginRequest = modelMapper.map(account, AccountLoginRequest.class);
 
         // Then
         mockMvc.perform(post("/account/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(accountLoginDto)))
+                .content(objectMapper.writeValueAsString(accountLoginRequest)))
                 .andDo(print())
                 .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("status", is(HttpStatus.BAD_REQUEST.value())))
                 .andExpect(jsonPath("message", is("fail")))
         ;
     }
@@ -158,14 +167,17 @@ class AccountControllerTest {
         Account account = makeAccount("test@test.com");
         saveAccount(account);
 
-        AccountLoginDto accountLoginDto = new AccountLoginDto();
+        AccountLoginRequest accountLoginRequest = new AccountLoginRequest();
 
         // Then
         mockMvc.perform(post("/account/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(accountLoginDto)))
+                .content(objectMapper.writeValueAsString(accountLoginRequest)))
                 .andDo(print())
                 .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("status", is(HttpStatus.BAD_REQUEST.value())))
+                .andExpect(jsonPath("message", is("fail")))
+                .andExpect(jsonPath("errors").exists())
         ;
     }
 
@@ -177,7 +189,7 @@ class AccountControllerTest {
 
         String token = jwtTokenProvider.createToken(account.getEmail());
 
-        AccountUpdateDto updateAccount = modelMapper.map(account, AccountUpdateDto.class);
+        AccountUpdateRequest updateAccount = modelMapper.map(account, AccountUpdateRequest.class);
         updateAccount.setName("핳핳!");
 
         // Then
@@ -187,6 +199,8 @@ class AccountControllerTest {
                 .content(objectMapper.writeValueAsString(updateAccount)))
                 .andDo(print())
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("status", is(HttpStatus.OK.value())))
+                .andExpect(jsonPath("message", is("success")))
         ;
     }
 
@@ -196,7 +210,7 @@ class AccountControllerTest {
         Account account = makeAccount("test@test.com");
         saveAccount(account);
 
-        AccountUpdateDto updateAccount = modelMapper.map(account, AccountUpdateDto.class);
+        AccountUpdateRequest updateAccount = modelMapper.map(account, AccountUpdateRequest.class);
         updateAccount.setName("핳핳!");
 
         // Then
@@ -215,7 +229,7 @@ class AccountControllerTest {
         Account account = makeAccount(email);
         saveAccount(account);
 
-        AccountDeleteDto deleteAccount = modelMapper.map(account, AccountDeleteDto.class);
+        AccountDeleteRequest deleteAccount = modelMapper.map(account, AccountDeleteRequest.class);
 
         String token = jwtTokenProvider.createToken(account.getEmail());
 
@@ -225,7 +239,10 @@ class AccountControllerTest {
                 .header("X-AUTH-TOKEN", token)
                 .content(objectMapper.writeValueAsString(deleteAccount)))
                 .andDo(print())
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("status", is(HttpStatus.OK.value())))
+                .andExpect(jsonPath("message", is("success")))
+        ;
 
         assertThat(accountRepository.findByEmail(email).isPresent()).isFalse();
     }
@@ -237,7 +254,7 @@ class AccountControllerTest {
         Account account = makeAccount(email);
         saveAccount(account);
 
-        AccountDeleteDto deleteAccount = modelMapper.map(account, AccountDeleteDto.class);
+        AccountDeleteRequest deleteAccount = modelMapper.map(account, AccountDeleteRequest.class);
 
         // Then
         mockMvc.perform(MockMvcRequestBuilders.delete("/account")
@@ -250,7 +267,7 @@ class AccountControllerTest {
     }
 
     private void saveAccount(Account account) {
-        AccountRegistDto regist = modelMapper.map(account, AccountRegistDto.class);
+        AccountRegistRequest regist = modelMapper.map(account, AccountRegistRequest.class);
         accountService.createAccount(regist);
     }
 
