@@ -3,7 +3,7 @@ package me.powerarc.taketogether.event;
 import lombok.RequiredArgsConstructor;
 import me.powerarc.taketogether.account.Account;
 import me.powerarc.taketogether.account.AccountService;
-import me.powerarc.taketogether.account.dto.AccountUpdateDto;
+import me.powerarc.taketogether.account.request.AccountUpdateRequest;
 import me.powerarc.taketogether.event.request.EventCreateRequest;
 import me.powerarc.taketogether.event.request.EventUpdateRequest;
 import org.modelmapper.ModelMapper;
@@ -89,7 +89,7 @@ public class EventService {
         event.addParticipants(account);
         Event savedEvent = eventRepository.save(event);
 
-        AccountUpdateDto updateAccount = modelMapper.map(account, AccountUpdateDto.class);
+        AccountUpdateRequest updateAccount = modelMapper.map(account, AccountUpdateRequest.class);
         account.addEvent(event);
         accountService.updateAccount(updateAccount, account);
         return savedEvent;

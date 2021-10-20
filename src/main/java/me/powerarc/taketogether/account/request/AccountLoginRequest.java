@@ -1,4 +1,4 @@
-package me.powerarc.taketogether.account.dto;
+package me.powerarc.taketogether.account.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -7,14 +7,13 @@ import lombok.NoArgsConstructor;
 
 import javax.validation.constraints.NotEmpty;
 
-@Builder
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AccountUpdateDto {
+public class AccountLoginRequest {
+    @NotEmpty
+    private String email;
     @NotEmpty
     private String password;
-    private String name;
-    private String email;
-    private String newPassword;
 }
