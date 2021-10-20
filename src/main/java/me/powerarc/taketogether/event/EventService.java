@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import me.powerarc.taketogether.account.Account;
 import me.powerarc.taketogether.account.AccountService;
 import me.powerarc.taketogether.account.dto.AccountUpdateDto;
+import me.powerarc.taketogether.event.request.EventCreateRequest;
+import me.powerarc.taketogether.event.request.EventUpdateRequest;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
@@ -59,11 +61,11 @@ public class EventService {
         return LocalDateTime.parse(time, format);
     }
 
-    public boolean updateEvent(EventDto eventDto, Long id, Account account) {
+    public boolean updateEvent(EventUpdateRequest eventUpdateRequest, Long id, Account account) {
         Event event = getEvent(id);
         if (!event.getHost().equals(account)) return false;
 
-        modelMapper.map(eventDto, event);
+        modelMapper.map(eventUpdateRequest, event);
         eventRepository.save(event);
 
         return true;
@@ -81,8 +83,8 @@ public class EventService {
         return true;
     }
 
-    public Event createEvent(EventDto eventDto, Account account) throws Exception {
-        Event event = modelMapper.map(eventDto, Event.class);
+    public Event createEvent(EventCreateRequest eventCreateRequest, Account account) throws Exception {
+        Event event = modelMapper.map(eventCreateRequest, Event.class);
         event.setHost(account);
         event.addParticipants(account);
         Event savedEvent = eventRepository.save(event);

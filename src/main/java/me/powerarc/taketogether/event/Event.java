@@ -10,6 +10,7 @@ import me.powerarc.taketogether.account.serializer.AccountSetSerializer;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Set;
 
 @Entity
@@ -44,7 +45,7 @@ public class Event {
     @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class)
     @JsonSerialize(using = AccountSetSerializer.class)
     @JoinColumn(updatable = false)
-    private Set<Account> participants;
+    private Set<Account> participants = new HashSet<>();
 
     public void addParticipants(Account account) {
         participants.add(account);

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import me.powerarc.taketogether.account.Account;
 import me.powerarc.taketogether.account.AccountRepository;
 import me.powerarc.taketogether.account.AccountRole;
+import me.powerarc.taketogether.event.request.EventUpdateRequest;
 import me.powerarc.taketogether.jwt.JwtTokenProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -11,6 +12,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
@@ -74,11 +76,13 @@ class EventControllerTest {
                 .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("id").value(event.getId()))
-                .andExpect(jsonPath("departure").value(event.getDeparture()))
-                .andExpect(jsonPath("arrivalTime").value(event.getArrivalTime().toString()))
-                .andExpect(jsonPath("$.host.id").value(account.getId().toString()))
-                .andExpect(jsonPath("$.participants[0].id").value(account.getId().toString()))
+                .andExpect(jsonPath("status", is(HttpStatus.OK.value())))
+                .andExpect(jsonPath("message", is("success")))
+                .andExpect(jsonPath("$.event.id").value(event.getId()))
+                .andExpect(jsonPath("$.event.departure").value(event.getDeparture()))
+                .andExpect(jsonPath("$.event.arrivalTime").value(event.getArrivalTime().toString()))
+                .andExpect(jsonPath("$.event.host.id").value(account.getId().toString()))
+                .andExpect(jsonPath("$.event.participants[0].id").value(account.getId().toString()))
         ;
     }
 
@@ -95,13 +99,18 @@ class EventControllerTest {
                 .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(event.getId()))
-                .andExpect(jsonPath("$[0].name").value(event.getName()))
-                .andExpect(jsonPath("$[0].departure").value(event.getDeparture()))
-                .andExpect(jsonPath("$[0].arrivalTime").value(event.getArrivalTime().toString()))
-                .andExpect(jsonPath("$[0].host.id").value(account.getId().toString()))
-                .andExpect(jsonPath("$[0].participants[0].id").value(account.getId().toString()))
-                .andExpect(jsonPath("$[1]").doesNotExist())
+                .andExpect(jsonPath("status", is(HttpStatus.OK.value())))
+                .andExpect(jsonPath("message", is("success")))
+                .andExpect(jsonPath("status", is(HttpStatus.OK.value())))
+                .andExpect(jsonPath("message", is("success")))
+                .andExpect(jsonPath("count", is(1)))
+                .andExpect(jsonPath("$.events[0].id").value(event.getId()))
+                .andExpect(jsonPath("$.events[0].name").value(event.getName()))
+                .andExpect(jsonPath("$.events[0].departure").value(event.getDeparture()))
+                .andExpect(jsonPath("$.events[0].arrivalTime").value(event.getArrivalTime().toString()))
+                .andExpect(jsonPath("$.events[0].host.id").value(account.getId().toString()))
+                .andExpect(jsonPath("$.events[0].participants[0].id").value(account.getId().toString()))
+                .andExpect(jsonPath("$.events[1]").doesNotExist())
         ;
     }
 
@@ -125,8 +134,11 @@ class EventControllerTest {
                 .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[*].departure", hasItem(departure)))
-                .andExpect(jsonPath("$[*]", hasSize(2)))
+                .andExpect(jsonPath("status", is(HttpStatus.OK.value())))
+                .andExpect(jsonPath("message", is("success")))
+                .andExpect(jsonPath("count", is(2)))
+                .andExpect(jsonPath("$.events[*].departure", hasItem(departure)))
+                .andExpect(jsonPath("$.events[*]", hasSize(2)))
         ;
     }
 
@@ -150,8 +162,11 @@ class EventControllerTest {
                 .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[*].destination", hasItem(destination)))
-                .andExpect(jsonPath("$[*]", hasSize(2)))
+                .andExpect(jsonPath("status", is(HttpStatus.OK.value())))
+                .andExpect(jsonPath("message", is("success")))
+                .andExpect(jsonPath("count", is(2)))
+                .andExpect(jsonPath("$.events[*].destination", hasItem(destination)))
+                .andExpect(jsonPath("$.events[*]", hasSize(2)))
         ;
     }
 
@@ -160,16 +175,15 @@ class EventControllerTest {
         // Given
         String email = "test@test.com";
         Account account = makeAccount(email);
-        int id = Math.toIntExact(account.getId());
         String name = "test";
         String departure = "Incheon";
         String destination = "Seoul";
-        EventDto eventDto = makeEventDto(account, name, departure, destination);
+        EventUpdateRequest eventUpdateRequest = makeEventDto(account, name, departure, destination);
 
         // Then
         mockMvc.perform(post("/event")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(eventDto)))
+                .content(objectMapper.writeValueAsString(eventUpdateRequest)))
                 .andDo(print())
                 .andExpect(status().isForbidden())
         ;
@@ -184,7 +198,7 @@ class EventControllerTest {
         String name = "test";
         String departure = "Incheon";
         String destination = "Seoul";
-        EventDto eventDto = makeEventDto(account, name, departure, destination);
+        EventUpdateRequest eventUpdateRequest = makeEventDto(account, name, departure, destination);
 
         String token = jwtTokenProvider.createToken(email);
 
@@ -192,17 +206,14 @@ class EventControllerTest {
         mockMvc.perform(post("/event")
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("X-AUTH-TOKEN", token)
-                .content(objectMapper.writeValueAsString(eventDto)))
+                .content(objectMapper.writeValueAsString(eventUpdateRequest)))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("name", is(name)))
-                .andExpect(jsonPath("departure", is(departure)))
-                .andExpect(jsonPath("destination", is(destination)))
-                .andExpect(jsonPath("$.host.id", is(id)))
-                .andExpect(jsonPath("$.participants[0].id", is(id)))
+                .andExpect(jsonPath("status", is(HttpStatus.OK.value())))
+                .andExpect(jsonPath("message", is("success")))
         ;
 
-        List<Event> byNameContains = eventRepository.findByNameContains(eventDto.getName());
+        List<Event> byNameContains = eventRepository.findByNameContains(eventUpdateRequest.getName());
         byNameContains.forEach(a -> {
             System.out.println(a.getName());
         });
@@ -220,12 +231,12 @@ class EventControllerTest {
         String newEmail = "newTest@test.com";
         Account newAccount = makeAccount(newEmail);
         String newName = "after";
-        EventDto eventDto = makeEventDto(newAccount, newName, newName + " dep", newName + " dest");
+        EventUpdateRequest eventUpdateRequest = makeEventDto(newAccount, newName, newName + " dep", newName + " dest");
 
         // Then
         mockMvc.perform(put("/event/" + event.getId())
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(eventDto)))
+                .content(objectMapper.writeValueAsString(eventUpdateRequest)))
                 .andDo(print())
                 .andExpect(status().isForbidden())
         ;
@@ -252,7 +263,7 @@ class EventControllerTest {
         String newEmail = "newTest@test.com";
         Account newAccount = makeAccount(newEmail);
         String newName = "after";
-        EventDto eventDto = makeEventDto(newAccount, newName, newName + " dep", newName + " dest");
+        EventUpdateRequest eventUpdateRequest = makeEventDto(newAccount, newName, newName + " dep", newName + " dest");
 
         String token = jwtTokenProvider.createToken(email);
 
@@ -260,9 +271,11 @@ class EventControllerTest {
         mockMvc.perform(put("/event/" + event.getId())
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("X-AUTH-TOKEN", token)
-                .content(objectMapper.writeValueAsString(eventDto)))
+                .content(objectMapper.writeValueAsString(eventUpdateRequest)))
                 .andDo(print())
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("status", is(HttpStatus.OK.value())))
+                .andExpect(jsonPath("message", is("success")))
         ;
 
         // Given
@@ -272,9 +285,65 @@ class EventControllerTest {
         assertThat(byId.getHost().getEmail()).isEqualTo(newAccount.getEmail());
         assertThat(byId.getHost().getId()).isEqualTo(newAccount.getId());
         assertThat(byId.getId()).isEqualTo(event.getId());
-        assertThat(byId.getName()).isEqualTo(eventDto.getName());
-        assertThat(byId.getDeparture()).isEqualTo(eventDto.getDeparture());
-        assertThat(byId.getDepartureTime()).isEqualTo(eventDto.getDepartureTime());
+        assertThat(byId.getName()).isEqualTo(eventUpdateRequest.getName());
+        assertThat(byId.getDeparture()).isEqualTo(eventUpdateRequest.getDeparture());
+        assertThat(byId.getDepartureTime()).isEqualTo(eventUpdateRequest.getDepartureTime());
+
+
+        // Given
+        Account byIdAccount = accountRepository.findById(account.getId()).get();
+        Account byIdNewAccount = accountRepository.findById(newAccount.getId()).get();
+
+        // Then
+        assertThat(byIdAccount).isEqualTo(account);
+        assertThat(byIdNewAccount).isEqualTo(newAccount);
+    }
+
+    @Test
+    public void updateEvent_with_authentication_wrong_participants() throws Exception {
+        // Given
+        String email = "test@test.com";
+        Account account = makeAccount(email);
+
+        String name = "before";
+        Event event = makeEvent(account, name, name + " dep", name + " dest");
+
+        String newEmail = "newTest@test.com";
+        Account newAccount = makeAccount(newEmail);
+        Account newAccount1 = makeAccount(newEmail + "1");
+        Account newAccount2 = makeAccount(newEmail + "2");
+        Account newAccount3 = makeAccount(newEmail + "3");
+        Account newAccount4 = makeAccount(newEmail + "4");
+
+        EventUpdateRequest eventUpdateRequest = modelMapper.map(event, EventUpdateRequest.class);
+        eventUpdateRequest.addParticipants(newAccount1);
+        eventUpdateRequest.addParticipants(newAccount2);
+        eventUpdateRequest.addParticipants(newAccount3);
+        eventUpdateRequest.addParticipants(newAccount4);
+
+        String token = jwtTokenProvider.createToken(email);
+
+        // Then
+        mockMvc.perform(put("/event/" + event.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("X-AUTH-TOKEN", token)
+                .content(objectMapper.writeValueAsString(eventUpdateRequest)))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("status", is(HttpStatus.BAD_REQUEST.value())))
+                .andExpect(jsonPath("message", is("fail")))
+        ;
+
+        // Given
+        Event byId = eventRepository.findById(event.getId()).get();
+
+        // Then
+        assertThat(byId.getHost().getEmail()).isEqualTo(account.getEmail());
+        assertThat(byId.getHost().getId()).isEqualTo(account.getId());
+        assertThat(byId.getId()).isEqualTo(event.getId());
+        assertThat(byId.getName()).isEqualTo(eventUpdateRequest.getName());
+        assertThat(byId.getDeparture()).isEqualTo(eventUpdateRequest.getDeparture());
+        assertThat(byId.getDepartureTime()).isEqualTo(eventUpdateRequest.getDepartureTime());
 
 
         // Given
@@ -302,7 +371,10 @@ class EventControllerTest {
         mockMvc.perform(get("/event/id/" + event.getId())
                 .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("status", is(HttpStatus.OK.value())))
+                .andExpect(jsonPath("message", is("success")))
+        ;
 
         Optional<Event> byId = eventRepository.findById(event.getId());
         assertThat(byId).isPresent();
@@ -325,6 +397,8 @@ class EventControllerTest {
                 .header("X-AUTH-TOKEN", token))
                 .andDo(print())
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("status", is(HttpStatus.OK.value())))
+                .andExpect(jsonPath("message", is("success")))
         ;
 
         // Then
@@ -345,8 +419,8 @@ class EventControllerTest {
         // Given
         String email = "test@test.com";
         Account account = makeAccount(email);
-        EventDto eventDto = makeEventDto(account, "test", "testStart", "testEnd");
-        eventDto.setArrivalTime(eventDto.getDepartureTime().minusHours(3));
+        EventUpdateRequest eventUpdateRequest = makeEventDto(account, "test", "testStart", "testEnd");
+        eventUpdateRequest.setArrivalTime(eventUpdateRequest.getDepartureTime().minusHours(3));
 
         String token = jwtTokenProvider.createToken(email);
 
@@ -354,38 +428,14 @@ class EventControllerTest {
         mockMvc.perform(post("/event")
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("X-AUTH-TOKEN", token)
-                .content(objectMapper.writeValueAsString(eventDto)))
+                .content(objectMapper.writeValueAsString(eventUpdateRequest)))
                 .andDo(print())
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$[0].objectName", is("eventDto")))
-                .andExpect(jsonPath("$[0].code", is("wrongArrivalTime")))
-                .andExpect(jsonPath("$[0].defaultMessage", is("Arrival time is earlier than departure time")))
-        ;
-    }
-
-    @Test
-    public void createEvent_Bad_Request_Wrong_Participants() throws Exception {
-        // Given
-        String email = "test@test.com";
-        Account account = makeAccount(email);
-        EventDto eventDto = makeEventDto(account, "test2", "test2Start", "test2End");
-        eventDto.addParticipants(makeAccount("test2@test.com"));
-        eventDto.addParticipants(makeAccount("test3@test.com"));
-        eventDto.addParticipants(makeAccount("test4@test.com"));
-        eventDto.addParticipants(makeAccount("test5@test.com"));
-
-        String token = jwtTokenProvider.createToken(email);
-
-        // Then
-        mockMvc.perform(post("/event")
-                .contentType(MediaType.APPLICATION_JSON)
-                .header("X-AUTH-TOKEN", token)
-                .content(objectMapper.writeValueAsString(eventDto)))
-                .andDo(print())
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$[0].objectName", is("eventDto")))
-                .andExpect(jsonPath("$[0].code", is("wrongParticipants")))
-                .andExpect(jsonPath("$[0].defaultMessage", is("The number of participants has exceeded")))
+                .andExpect(jsonPath("status", is(HttpStatus.BAD_REQUEST.value())))
+                .andExpect(jsonPath("message", is("fail")))
+                .andExpect(jsonPath("$.errors[0].objectName", is("eventCreateRequest")))
+                .andExpect(jsonPath("$.errors[0].code", is("wrongArrivalTime")))
+                .andExpect(jsonPath("$.errors[0].defaultMessage", is("Arrival time is earlier than departure time")))
         ;
     }
 
@@ -393,8 +443,8 @@ class EventControllerTest {
     public void createEvent_Bad_Request_Empty_Input() throws Exception {
         // Given
         String email = "test@test.com";
-        Account account = makeAccount(email);
-        EventDto eventDto = new EventDto();
+        makeAccount(email);
+        EventUpdateRequest eventUpdateRequest = new EventUpdateRequest();
 
         String token = jwtTokenProvider.createToken(email);
 
@@ -402,9 +452,11 @@ class EventControllerTest {
         mockMvc.perform(post("/event")
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("X-AUTH-TOKEN", token)
-                .content(objectMapper.writeValueAsString(eventDto)))
+                .content(objectMapper.writeValueAsString(eventUpdateRequest)))
                 .andDo(print())
                 .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("status", is(HttpStatus.BAD_REQUEST.value())))
+                .andExpect(jsonPath("message", is("fail")))
         ;
     }
 
@@ -425,8 +477,8 @@ class EventControllerTest {
         return eventRepository.save(event);
     }
 
-    private EventDto makeEventDto(Account account, String name, String departure, String destination) {
-        EventDto eventDto = EventDto.builder()
+    private EventUpdateRequest makeEventDto(Account account, String name, String departure, String destination) {
+        EventUpdateRequest eventUpdateRequest = EventUpdateRequest.builder()
                 .name(name)
                 .departure(departure)
                 .destination(destination)
@@ -438,7 +490,7 @@ class EventControllerTest {
                 .totalNum(4)
                 .build();
 
-        return eventDto;
+        return eventUpdateRequest;
     }
 
 
