@@ -1,4 +1,4 @@
-package me.powerarc.taketogether.event;
+package me.powerarc.taketogether.event.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,7 +16,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class EventDto {
+public class EventUpdateRequest {
     @NotNull
     private String name;
     @NotNull
