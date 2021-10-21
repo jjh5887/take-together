@@ -97,7 +97,7 @@ class AccountControllerTest {
                 .andDo(print())
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("status", is(HttpStatus.BAD_REQUEST.value())))
-                .andExpect(jsonPath("message", is("이미 존재하는 이메일 입니다.")));
+                .andExpect(jsonPath("message", is("이미 존재하는 계정입니다.")));
     }
 
     @Test
@@ -157,7 +157,7 @@ class AccountControllerTest {
                 .andDo(print())
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("status", is(HttpStatus.BAD_REQUEST.value())))
-                .andExpect(jsonPath("message", is("fail")))
+                .andExpect(jsonPath("message", is("비밀번호가 일치하지 않습니다.")))
         ;
     }
 
@@ -205,6 +205,30 @@ class AccountControllerTest {
     }
 
     @Test
+    public void update_wrong_password() throws Exception {
+        // Given
+        Account account = makeAccount("test@test.com");
+        saveAccount(account);
+
+        String token = jwtTokenProvider.createToken(account.getEmail());
+
+        AccountUpdateRequest updateAccount = modelMapper.map(account, AccountUpdateRequest.class);
+        updateAccount.setName("핳핳!");
+        updateAccount.setPassword(updateAccount.getPassword() + "wrong");
+
+        // Then
+        mockMvc.perform(put("/account")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("X-AUTH-TOKEN", token)
+                .content(objectMapper.writeValueAsString(updateAccount)))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("status", is(HttpStatus.BAD_REQUEST.value())))
+                .andExpect(jsonPath("message", is("비밀번호가 일치하지 않습니다.")))
+        ;
+    }
+
+    @Test
     public void update_without_authentication() throws Exception {
         // Given
         Account account = makeAccount("test@test.com");
@@ -245,6 +269,32 @@ class AccountControllerTest {
         ;
 
         assertThat(accountRepository.findByEmail(email).isPresent()).isFalse();
+    }
+
+    @Test
+    public void delete_wrong_password() throws Exception {
+        // Given
+        String email = "test@test.com";
+        Account account = makeAccount(email);
+        saveAccount(account);
+
+        AccountDeleteRequest deleteAccount = modelMapper.map(account, AccountDeleteRequest.class);
+        deleteAccount.setPassword(deleteAccount.getPassword() + "wrong");
+
+        String token = jwtTokenProvider.createToken(account.getEmail());
+
+        // Then
+        mockMvc.perform(MockMvcRequestBuilders.delete("/account")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("X-AUTH-TOKEN", token)
+                .content(objectMapper.writeValueAsString(deleteAccount)))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("status", is(HttpStatus.BAD_REQUEST.value())))
+                .andExpect(jsonPath("message", is("비밀번호가 일치하지 않습니다.")))
+        ;
+
+        assertThat(accountRepository.findByEmail(email)).isPresent();
     }
 
     @Test
