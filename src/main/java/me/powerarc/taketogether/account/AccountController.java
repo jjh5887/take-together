@@ -38,13 +38,7 @@ public class AccountController {
                             .errors(errors).build());
         }
 
-        if (!accountService.createAccount(accountRegistRequest)) {
-            return ResponseEntity.badRequest()
-                    .body(AccountFailResponse.builder()
-                            .status(HttpStatus.BAD_REQUEST.value())
-                            .message("이미 존재하는 이메일 입니다.")
-                            .errors(errors).build());
-        }
+        accountService.createAccount(accountRegistRequest);
 
         return ResponseEntity.ok(AccountSuccessResponse.builder()
                 .status(HttpStatus.OK.value())
@@ -61,13 +55,7 @@ public class AccountController {
                             .errors(errors).build());
         }
 
-        if (!accountService.login(accountLoginRequest)) {
-            return ResponseEntity.badRequest()
-                    .body(AccountFailResponse.builder()
-                            .status(HttpStatus.BAD_REQUEST.value())
-                            .message("fail")
-                            .errors(errors).build());
-        }
+        accountService.login(accountLoginRequest);
 
         return ResponseEntity.ok(AccountLoginResponse.builder()
                 .status(HttpStatus.OK.value())
@@ -85,13 +73,7 @@ public class AccountController {
                             .errors(errors).build());
         }
 
-        if (!accountService.updateAccount(accountUpdateRequest, accountService.getAccount(jwtTokenProvider.getUserEmail(request)))) {
-            return ResponseEntity.badRequest()
-                    .body(AccountFailResponse.builder()
-                            .status(HttpStatus.BAD_REQUEST.value())
-                            .message("fail")
-                            .errors(errors).build());
-        }
+        accountService.updateAccount(accountUpdateRequest, accountService.getAccount(jwtTokenProvider.getUserEmail(request)));
 
         return ResponseEntity.ok(AccountSuccessResponse.builder()
                 .status(HttpStatus.OK.value())
@@ -108,13 +90,7 @@ public class AccountController {
                             .errors(errors).build());
         }
 
-        if (!accountService.delete(accountDeleteRequest, request, jwtTokenProvider)) {
-            return ResponseEntity.badRequest()
-                    .body(AccountFailResponse.builder()
-                            .status(HttpStatus.BAD_REQUEST.value())
-                            .message("fail")
-                            .errors(errors).build());
-        }
+        accountService.delete(accountDeleteRequest, jwtTokenProvider.getUserEmail(request));
 
         return ResponseEntity.ok(AccountSuccessResponse.builder()
                 .status(HttpStatus.OK.value())

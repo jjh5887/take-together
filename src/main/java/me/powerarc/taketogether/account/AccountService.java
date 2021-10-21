@@ -16,8 +16,6 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import javax.servlet.http.HttpServletRequest;
-
 @Service
 public class AccountService implements UserDetailsService {
 
@@ -33,15 +31,14 @@ public class AccountService implements UserDetailsService {
     @Autowired
     PasswordEncoder passwordEncoder;
 
-    public boolean createAccount(AccountRegistRequest accountRegistRequest) {
-        if (!accountRepository.existsByEmail(accountRegistRequest.getEmail())) {
-            Account account = modelMapper.map(accountRegistRequest, Account.class);
-            account.encodePassword(passwordEncoder);
-            account.addRole(AccountRole.USER);
-            accountRepository.save(account);
-            return true;
-        }
-        return false;
+    public void createAccount(AccountRegistRequest accountRegistRequest) {
+        if (accountRepository.existsByEmail(accountRegistRequest.getEmail()))
+            throw new WebException(HttpStatus.BAD_REQUEST.value(), "이미 존재하는 계정입니다.");
+
+        Account account = modelMapper.map(accountRegistRequest, Account.class);
+        account.encodePassword(passwordEncoder);
+        account.addRole(AccountRole.USER);
+        accountRepository.save(account);
     }
 
 
@@ -53,13 +50,11 @@ public class AccountService implements UserDetailsService {
         return accountRepository.findById(id).orElseThrow(() -> new WebException(HttpStatus.BAD_REQUEST.value(), "존재하지 않는 계정입니다."));
     }
 
-    public boolean updateAccount(AccountUpdateRequest accountUpdateRequest, Account account) throws Exception {
-        if (passwordEncoder.matches(accountUpdateRequest.getPassword(), account.getPassword())) {
-            modelMapper.map(accountUpdateRequest, account);
-            accountRepository.save(account);
-            return true;
-        }
-        return false;
+    public void updateAccount(AccountUpdateRequest accountUpdateRequest, Account account) throws Exception {
+        if (!passwordEncoder.matches(accountUpdateRequest.getPassword(), account.getPassword()))
+            throw new WebException(HttpStatus.BAD_REQUEST.value(), "비밀번호가 일치하지 않습니다.");
+        modelMapper.map(accountUpdateRequest, account);
+        accountRepository.save(account);
     }
 
     @SneakyThrows
@@ -68,20 +63,17 @@ public class AccountService implements UserDetailsService {
         return accountRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException(email));
     }
 
-    public boolean login(AccountLoginRequest accountLoginRequest) {
-        Account byEmail = accountRepository.findByEmail(accountLoginRequest.getEmail())
-                .orElseThrow(() -> new UsernameNotFoundException(accountLoginRequest.getEmail()));
-        return passwordEncoder.matches(accountLoginRequest.getPassword(), byEmail.getPassword());
+    public void login(AccountLoginRequest accountLoginRequest) {
+        Account account = getAccount(accountLoginRequest.getEmail());
+
+        if (!passwordEncoder.matches(accountLoginRequest.getPassword(), account.getPassword()))
+            throw new WebException(HttpStatus.BAD_REQUEST.value(), "비밀번호가 일치하지 않습니다.");
     }
 
-    public boolean delete(AccountDeleteRequest accountDeleteRequest, HttpServletRequest request, JwtTokenProvider jwtTokenProvider) throws Exception {
-        String token = this.jwtTokenProvider.resolveToken(request);
-        String userEmail = this.jwtTokenProvider.getUserEmail(token);
-        Account account = getAccount(userEmail);
-        if (passwordEncoder.matches(accountDeleteRequest.getPassword(), account.getPassword())) {
-            accountRepository.delete(account);
-            return true;
-        }
-        return false;
+    public void delete(AccountDeleteRequest accountDeleteRequest, String email) {
+        Account account = getAccount(email);
+        if (!passwordEncoder.matches(accountDeleteRequest.getPassword(), account.getPassword()))
+            throw new WebException(HttpStatus.BAD_REQUEST.value(), "비밀번호가 일치하지 않습니다.");
+        accountRepository.delete(account);
     }
 }
