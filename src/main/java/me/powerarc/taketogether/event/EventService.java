@@ -6,12 +6,16 @@ import me.powerarc.taketogether.account.AccountService;
 import me.powerarc.taketogether.account.request.AccountUpdateRequest;
 import me.powerarc.taketogether.event.request.EventCreateRequest;
 import me.powerarc.taketogether.event.request.EventUpdateRequest;
+import me.powerarc.taketogether.exception.WebException;
 import org.modelmapper.ModelMapper;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -20,8 +24,27 @@ public class EventService {
     private final AccountService accountService;
     private final ModelMapper modelMapper;
 
+    public Event createEvent(EventCreateRequest eventCreateRequest, String email) throws Exception {
+        if (eventRepository.existsByName(eventCreateRequest.getName()))
+            throw new WebException(HttpStatus.BAD_REQUEST.value(), "중복된 이름입니다.");
+
+        Account account = accountService.getAccount(email);
+
+        Event event = modelMapper.map(eventCreateRequest, Event.class);
+        event.setHost(account);
+        event.addParticipants(account);
+        Event savedEvent = eventRepository.save(event);
+
+        AccountUpdateRequest updateAccount = modelMapper.map(account, AccountUpdateRequest.class);
+        account.addEvent(event);
+        accountService.updateAccount(updateAccount, account);
+
+        return savedEvent;
+    }
+
     public Event getEvent(Long id) {
-        return eventRepository.findById(id).orElse(null);
+        return eventRepository.findById(id)
+                .orElseThrow(() -> new WebException(HttpStatus.BAD_REQUEST.value(), "존재하지 않는 이벤트입니다."));
     }
 
     public List<Event> getEvent(String name) {
@@ -56,42 +79,37 @@ public class EventService {
         return eventRepository.findByDepartureTimeBetweenAndArrivalTimeBetween(startA, endA, startB, endB);
     }
 
+    public void updateEvent(EventUpdateRequest eventUpdateRequest, Long id, String email) {
+        Event event = getEvent(id);
+        Account account = accountService.getAccount(email);
+
+        if (!event.getHost().equals(account))
+            throw new WebException(HttpStatus.FORBIDDEN.value(), "권한이 없습니다.");
+
+        modelMapper.map(eventUpdateRequest, event);
+
+        event.setHost(accountService.getAccount(eventUpdateRequest.getHost_id()));
+        Set<Account> accountSet = new HashSet<>();
+        for (Long participant_id : eventUpdateRequest.getParticipants_id()) {
+            accountSet.add(accountService.getAccount(participant_id));
+        }
+        event.setParticipants(accountSet);
+
+        eventRepository.save(event);
+    }
+
+    public void deleteEvent(Long id, String email) throws Exception {
+        Account account = accountService.getAccount(email);
+
+        Event event = getEvent(id);
+        if (!event.getHost().equals(account))
+            throw new WebException(HttpStatus.FORBIDDEN.value(), "권한이 없습니다.");
+
+        eventRepository.delete(event);
+    }
+
     public LocalDateTime getLocalDateTime(String time) {
         DateTimeFormatter format = DateTimeFormatter.ofPattern("yyyy년 MM월 dd일 HH시 mm분 ss초");
         return LocalDateTime.parse(time, format);
-    }
-
-    public boolean updateEvent(EventUpdateRequest eventUpdateRequest, Long id, Account account) {
-        Event event = getEvent(id);
-        if (!event.getHost().equals(account)) return false;
-
-        modelMapper.map(eventUpdateRequest, event);
-        eventRepository.save(event);
-
-        return true;
-    }
-
-    public boolean deleteEvent(Long id, Account account) throws Exception {
-        Event event = getEvent(id);
-        if (!event.getHost().equals(account)) return false;
-
-        try {
-            eventRepository.delete(event);
-        } catch (Exception e) {
-            return false;
-        }
-        return true;
-    }
-
-    public Event createEvent(EventCreateRequest eventCreateRequest, Account account) throws Exception {
-        Event event = modelMapper.map(eventCreateRequest, Event.class);
-        event.setHost(account);
-        event.addParticipants(account);
-        Event savedEvent = eventRepository.save(event);
-
-        AccountUpdateRequest updateAccount = modelMapper.map(account, AccountUpdateRequest.class);
-        account.addEvent(event);
-        accountService.updateAccount(updateAccount, account);
-        return savedEvent;
     }
 }

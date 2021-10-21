@@ -17,4 +17,6 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     List<Event> findByArrivalTimeBetween(LocalDateTime start, LocalDateTime end);
 
     List<Event> findByDepartureTimeBetweenAndArrivalTimeBetween(LocalDateTime startD, LocalDateTime endD, LocalDateTime startA, LocalDateTime endA);
+
+    boolean existsByName(String name);
 }
