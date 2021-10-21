@@ -5,9 +5,11 @@ import me.powerarc.taketogether.account.request.AccountDeleteRequest;
 import me.powerarc.taketogether.account.request.AccountLoginRequest;
 import me.powerarc.taketogether.account.request.AccountRegistRequest;
 import me.powerarc.taketogether.account.request.AccountUpdateRequest;
+import me.powerarc.taketogether.exception.WebException;
 import me.powerarc.taketogether.jwt.JwtTokenProvider;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -31,11 +33,24 @@ public class AccountService implements UserDetailsService {
     @Autowired
     PasswordEncoder passwordEncoder;
 
-    public AccountService() {
+    public boolean createAccount(AccountRegistRequest accountRegistRequest) {
+        if (!accountRepository.existsByEmail(accountRegistRequest.getEmail())) {
+            Account account = modelMapper.map(accountRegistRequest, Account.class);
+            account.encodePassword(passwordEncoder);
+            account.addRole(AccountRole.USER);
+            accountRepository.save(account);
+            return true;
+        }
+        return false;
     }
 
-    public Account getAccount(String email) throws Exception {
-        return accountRepository.findByEmail(email).orElseThrow(Exception::new);
+
+    public Account getAccount(String email) {
+        return accountRepository.findByEmail(email).orElseThrow(() -> new WebException(HttpStatus.BAD_REQUEST.value(), "존재하지 않는 계정입니다."));
+    }
+
+    public Account getAccount(Long id) {
+        return accountRepository.findById(id).orElseThrow(() -> new WebException(HttpStatus.BAD_REQUEST.value(), "존재하지 않는 계정입니다."));
     }
 
     public boolean updateAccount(AccountUpdateRequest accountUpdateRequest, Account account) throws Exception {
@@ -51,17 +66,6 @@ public class AccountService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         return accountRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException(email));
-    }
-
-    public boolean createAccount(AccountRegistRequest accountRegistRequest) {
-        if (!accountRepository.existsByEmail(accountRegistRequest.getEmail())) {
-            Account account = modelMapper.map(accountRegistRequest, Account.class);
-            account.encodePassword(passwordEncoder);
-            account.addRole(AccountRole.USER);
-            accountRepository.save(account);
-            return true;
-        }
-        return false;
     }
 
     public boolean login(AccountLoginRequest accountLoginRequest) {

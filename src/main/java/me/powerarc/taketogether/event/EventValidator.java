@@ -12,7 +12,7 @@ public class EventValidator {
         if (eventUpdateRequest.getArrivalTime().isBefore(eventUpdateRequest.getDepartureTime()))
             errors.reject("wrongArrivalTime", "Arrival time is earlier than departure time");
 
-        if (eventUpdateRequest.getParticipants().size() > eventUpdateRequest.getTotalNum())
+        if (eventUpdateRequest.getParticipants_id().size() > eventUpdateRequest.getTotalNum())
             errors.reject("wrongParticipants", "The number of participants has exceeded");
     }
 

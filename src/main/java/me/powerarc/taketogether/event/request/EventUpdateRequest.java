@@ -4,12 +4,12 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import me.powerarc.taketogether.account.Account;
 
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Set;
 
 @Data
@@ -34,11 +34,11 @@ public class EventUpdateRequest {
     private int totalNum;
 
     @NotNull
-    private Account host;
+    private Long host_id;
     @NotNull
-    private Set<Account> participants;
+    private Set<Long> participants_id = new HashSet<>();
 
-    public void addParticipants(Account account) {
-        participants.add(account);
+    public void addParticipants(Long id) {
+        participants_id.add(id);
     }
 }
