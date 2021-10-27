@@ -3,18 +3,18 @@ package me.powerarc.taketogether.event;
 import lombok.RequiredArgsConstructor;
 import me.powerarc.taketogether.account.Account;
 import me.powerarc.taketogether.account.AccountService;
-import me.powerarc.taketogether.account.request.AccountUpdateRequest;
 import me.powerarc.taketogether.event.request.EventCreateRequest;
 import me.powerarc.taketogether.event.request.EventUpdateRequest;
 import me.powerarc.taketogether.exception.WebException;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 @Service
@@ -35,51 +35,50 @@ public class EventService {
         event.addParticipants(account);
         Event savedEvent = eventRepository.save(event);
 
-        AccountUpdateRequest updateAccount = modelMapper.map(account, AccountUpdateRequest.class);
         account.addEvent(event);
-        accountService.updateAccount(updateAccount, account);
+        accountService.saveAccount(account);
 
         return savedEvent;
     }
 
     public Event getEvent(Long id) {
         return eventRepository.findById(id)
-                .orElseThrow(() -> new WebException(HttpStatus.BAD_REQUEST.value(), "존재하지 않는 이벤트입니다."));
+                .orElseThrow(() -> new WebException(HttpStatus.NOT_FOUND.value(), "존재하지 않는 이벤트입니다."));
     }
 
-    public List<Event> getEvent(String name) {
-        return eventRepository.findByNameContains(name);
+    public Page<Event> getEvent(String name, Pageable pageable) {
+        return eventRepository.findByNameContains(name, pageable);
     }
 
-    public List<Event> getEventByDeparture(String departure) {
-        return eventRepository.findByDepartureContains(departure);
+    public Page<Event> getEventByDeparture(String departure, Pageable pageable) {
+        return eventRepository.findByDepartureContains(departure, pageable);
     }
 
-    public List<Event> getEventByDestination(String destination) {
-        return eventRepository.findByDestinationContains(destination);
+    public Page<Event> getEventByDestination(String destination, Pageable pageable) {
+        return eventRepository.findByDestinationContains(destination, pageable);
     }
 
-    public List<Event> getEventByDepartureTime(String startTime, String endTime) {
+    public Page<Event> getEventByDepartureTime(String startTime, String endTime, Pageable pageable) {
         LocalDateTime start = getLocalDateTime(startTime);
         LocalDateTime end = getLocalDateTime(endTime);
-        return eventRepository.findByDepartureTimeBetween(start, end);
+        return eventRepository.findByDepartureTimeBetween(start, end, pageable);
     }
 
-    public List<Event> getEventByArrivalTime(String startTime, String endTime) {
+    public Page<Event> getEventByArrivalTime(String startTime, String endTime, Pageable pageable) {
         LocalDateTime start = getLocalDateTime(startTime);
         LocalDateTime end = getLocalDateTime(endTime);
-        return eventRepository.findByArrivalTimeBetween(start, end);
+        return eventRepository.findByArrivalTimeBetween(start, end, pageable);
     }
 
-    public List<Event> getEvent(String startTimeA, String endTimeA, String startTimeB, String endTimeB) {
+    public Page<Event> getEvent(String startTimeA, String endTimeA, String startTimeB, String endTimeB, Pageable pageable) {
         LocalDateTime startA = getLocalDateTime(startTimeA);
         LocalDateTime startB = getLocalDateTime(startTimeB);
         LocalDateTime endA = getLocalDateTime(endTimeA);
         LocalDateTime endB = getLocalDateTime(endTimeB);
-        return eventRepository.findByDepartureTimeBetweenAndArrivalTimeBetween(startA, endA, startB, endB);
+        return eventRepository.findByDepartureTimeBetweenAndArrivalTimeBetween(startA, endA, startB, endB, pageable);
     }
 
-    public void updateEvent(EventUpdateRequest eventUpdateRequest, Long id, String email) {
+    public Event updateEvent(EventUpdateRequest eventUpdateRequest, Long id, String email) {
         Event event = getEvent(id);
         Account account = accountService.getAccount(email);
 
@@ -95,15 +94,19 @@ public class EventService {
         }
         event.setParticipants(accountSet);
 
-        eventRepository.save(event);
+        return eventRepository.save(event);
     }
 
-    public void deleteEvent(Long id, String email) throws Exception {
+    public void deleteEvent(Long id, String email) {
         Account account = accountService.getAccount(email);
 
         Event event = getEvent(id);
         if (!event.getHost().equals(account))
             throw new WebException(HttpStatus.FORBIDDEN.value(), "권한이 없습니다.");
+
+        account.getHostEvents().remove(event);
+        account.getParticipantEvents().remove(event);
+        accountService.saveAccount(account);
 
         eventRepository.delete(event);
     }

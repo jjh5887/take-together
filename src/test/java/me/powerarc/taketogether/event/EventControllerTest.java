@@ -21,7 +21,6 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -73,7 +72,7 @@ class EventControllerTest {
         accountRepository.save(account);
 
         // Then
-        mockMvc.perform(get("/event/id/" + event.getId())
+        mockMvc.perform(get("/event/" + event.getId())
                 .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -90,11 +89,11 @@ class EventControllerTest {
     @Test
     public void getEventByWrongId() throws Exception {
         // Then
-        mockMvc.perform(get("/event/id/5")
+        mockMvc.perform(get("/event/999")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("status", is(HttpStatus.BAD_REQUEST.value())))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("status", is(HttpStatus.NOT_FOUND.value())))
                 .andExpect(jsonPath("message", is("존재하지 않는 이벤트입니다.")))
         ;
     }
@@ -116,14 +115,13 @@ class EventControllerTest {
                 .andExpect(jsonPath("message", is("success")))
                 .andExpect(jsonPath("status", is(HttpStatus.OK.value())))
                 .andExpect(jsonPath("message", is("success")))
-                .andExpect(jsonPath("count", is(1)))
-                .andExpect(jsonPath("$.events[0].id").value(event.getId()))
-                .andExpect(jsonPath("$.events[0].name").value(event.getName()))
-                .andExpect(jsonPath("$.events[0].departure").value(event.getDeparture()))
-                .andExpect(jsonPath("$.events[0].arrivalTime").value(event.getArrivalTime().toString()))
-                .andExpect(jsonPath("$.events[0].host.id").value(account.getId().toString()))
-                .andExpect(jsonPath("$.events[0].participants[0].id").value(account.getId().toString()))
-                .andExpect(jsonPath("$.events[1]").doesNotExist())
+                .andExpect(jsonPath("$.events.content[0].id").value(event.getId()))
+                .andExpect(jsonPath("$.events.content[0].name").value(event.getName()))
+                .andExpect(jsonPath("$.events.content[0].departure").value(event.getDeparture()))
+                .andExpect(jsonPath("$.events.content[0].arrivalTime").value(event.getArrivalTime().toString()))
+                .andExpect(jsonPath("$.events.content[0].host.id").value(account.getId().toString()))
+                .andExpect(jsonPath("$.events.content[0].participants[0].id").value(account.getId().toString()))
+                .andExpect(jsonPath("$.events.content[1]").doesNotExist())
         ;
     }
 
@@ -142,8 +140,7 @@ class EventControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("status", is(HttpStatus.OK.value())))
                 .andExpect(jsonPath("message", is("success")))
-                .andExpect(jsonPath("count", is(0)))
-                .andExpect(jsonPath("$.events[0]").doesNotExist())
+                .andExpect(jsonPath("$.events.content").isEmpty())
         ;
     }
 
@@ -169,9 +166,8 @@ class EventControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("status", is(HttpStatus.OK.value())))
                 .andExpect(jsonPath("message", is("success")))
-                .andExpect(jsonPath("count", is(2)))
-                .andExpect(jsonPath("$.events[*].departure", hasItem(departure)))
-                .andExpect(jsonPath("$.events[*]", hasSize(2)))
+                .andExpect(jsonPath("$.events.content[*].departure", hasItem(departure)))
+                .andExpect(jsonPath("$.events.content", hasSize(2)))
         ;
     }
 
@@ -196,9 +192,8 @@ class EventControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("status", is(HttpStatus.OK.value())))
                 .andExpect(jsonPath("message", is("success")))
-                .andExpect(jsonPath("count", is(2)))
-                .andExpect(jsonPath("$.events[*].destination", hasItem(destination)))
-                .andExpect(jsonPath("$.events[*]", hasSize(2)))
+                .andExpect(jsonPath("$.events.content[*].destination", hasItem(destination)))
+                .andExpect(jsonPath("$.events.content", hasSize(2)))
         ;
     }
 
@@ -244,12 +239,13 @@ class EventControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("status", is(HttpStatus.OK.value())))
                 .andExpect(jsonPath("message", is("success")))
+                .andExpect(jsonPath("$.event.links[0].rel", is("self")))
         ;
 
-        List<Event> byNameContains = eventRepository.findByNameContains(eventCreateRequest.getName());
-        assertThat(byNameContains.size()).isEqualTo(1);
-        assertThat(byNameContains.get(0).getName()).isEqualTo(eventCreateRequest.getName());
-        assertThat(byNameContains.get(0).getHost().getEmail()).isEqualTo(email);
+//        List<Event> byNameContains = eventRepository.findByNameContains(eventCreateRequest.getName());
+//        assertThat(byNameContains.size()).isEqualTo(1);
+//        assertThat(byNameContains.get(0).getName()).isEqualTo(eventCreateRequest.getName());
+//        assertThat(byNameContains.get(0).getHost().getEmail()).isEqualTo(email);
     }
 
     @Test
@@ -380,8 +376,8 @@ class EventControllerTest {
                 .header("X-AUTH-TOKEN", token)
                 .content(objectMapper.writeValueAsString(eventUpdateRequest)))
                 .andDo(print())
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("status", is(HttpStatus.BAD_REQUEST.value())))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("status", is(HttpStatus.FORBIDDEN.value())))
                 .andExpect(jsonPath("message", is("권한이 없습니다.")))
         ;
 
@@ -488,7 +484,7 @@ class EventControllerTest {
         ;
 
         // Then
-        mockMvc.perform(get("/event/id/" + event.getId())
+        mockMvc.perform(get("/event/" + event.getId())
                 .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -519,13 +515,16 @@ class EventControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("status", is(HttpStatus.OK.value())))
                 .andExpect(jsonPath("message", is("success")))
+                .andExpect(jsonPath("$.event.links[0].rel", is("query-event-id")))
+                .andExpect(jsonPath("$.event.links[1].rel", is("query-events-name")))
+                .andExpect(jsonPath("$.event.links[2].rel", is("create-event")))
         ;
 
         // Then
-        mockMvc.perform(get("/event/id/" + event.getId())
+        mockMvc.perform(get("/event/" + event.getId())
                 .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isNotFound());
 
         Optional<Event> byId = eventRepository.findById(event.getId());
         assertThat(byId).isEmpty();
@@ -549,13 +548,13 @@ class EventControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("X-AUTH-TOKEN", token))
                 .andDo(print())
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("status", is(HttpStatus.BAD_REQUEST.value())))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("status", is(HttpStatus.FORBIDDEN.value())))
                 .andExpect(jsonPath("message", is("권한이 없습니다.")))
         ;
 
         // Then
-        mockMvc.perform(get("/event/id/" + event.getId())
+        mockMvc.perform(get("/event/" + event.getId())
                 .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk());

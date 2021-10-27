@@ -50,6 +50,10 @@ public class AccountService implements UserDetailsService {
         return accountRepository.findById(id).orElseThrow(() -> new WebException(HttpStatus.BAD_REQUEST.value(), "존재하지 않는 계정입니다."));
     }
 
+    public void saveAccount(Account account) {
+        accountRepository.save(account);
+    }
+
     public void updateAccount(AccountUpdateRequest accountUpdateRequest, Account account) throws Exception {
         if (!passwordEncoder.matches(accountUpdateRequest.getPassword(), account.getPassword()))
             throw new WebException(HttpStatus.BAD_REQUEST.value(), "비밀번호가 일치하지 않습니다.");

@@ -1,22 +1,23 @@
 package me.powerarc.taketogether.event;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 public interface EventRepository extends JpaRepository<Event, Long> {
-    List<Event> findByNameContains(String name);
+    Page<Event> findByNameContains(String name, Pageable pageable);
 
-    List<Event> findByDepartureContains(String departure);
+    Page<Event> findByDepartureContains(String departure, Pageable pageable);
 
-    List<Event> findByDestinationContains(String destination);
+    Page<Event> findByDestinationContains(String destination, Pageable pageable);
 
-    List<Event> findByDepartureTimeBetween(LocalDateTime start, LocalDateTime end);
+    Page<Event> findByDepartureTimeBetween(LocalDateTime start, LocalDateTime end, Pageable pageable);
 
-    List<Event> findByArrivalTimeBetween(LocalDateTime start, LocalDateTime end);
+    Page<Event> findByArrivalTimeBetween(LocalDateTime start, LocalDateTime end, Pageable pageable);
 
-    List<Event> findByDepartureTimeBetweenAndArrivalTimeBetween(LocalDateTime startD, LocalDateTime endD, LocalDateTime startA, LocalDateTime endA);
+    Page<Event> findByDepartureTimeBetweenAndArrivalTimeBetween(LocalDateTime startD, LocalDateTime endD, LocalDateTime startA, LocalDateTime endA, Pageable pageable);
 
     boolean existsByName(String name);
 }

@@ -8,16 +8,22 @@ import org.springframework.validation.Errors;
 @Component
 public class EventValidator {
 
-    public void validate(EventUpdateRequest eventUpdateRequest, Errors errors) {
+    public boolean validate(EventUpdateRequest eventUpdateRequest, Errors errors) {
+        if (errors.hasErrors()) return true;
         if (eventUpdateRequest.getArrivalTime().isBefore(eventUpdateRequest.getDepartureTime()))
             errors.reject("wrongArrivalTime", "Arrival time is earlier than departure time");
 
         if (eventUpdateRequest.getParticipants_id().size() > eventUpdateRequest.getTotalNum())
             errors.reject("wrongParticipants", "The number of participants has exceeded");
+
+        return errors.hasErrors();
     }
 
-    public void validate(EventCreateRequest eventCreateRequest, Errors errors) {
+    public boolean validate(EventCreateRequest eventCreateRequest, Errors errors) {
+        if (errors.hasErrors()) return true;
         if (eventCreateRequest.getArrivalTime().isBefore(eventCreateRequest.getDepartureTime()))
             errors.reject("wrongArrivalTime", "Arrival time is earlier than departure time");
+
+        return errors.hasErrors();
     }
 }
