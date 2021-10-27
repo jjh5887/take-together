@@ -5,8 +5,12 @@ import me.powerarc.taketogether.account.AccountRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.awt.print.Pageable;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -83,24 +87,24 @@ class EventRepositoryTest {
         // Then
         start = LocalDateTime.of(2021, 10, 12, 1, 0);
         end = LocalDateTime.of(2021, 10, 12, 4, 5);
-        List<Event> byDepartureTimeBetween = eventRepository.findByDepartureTimeBetween(start, end);
+        Page<Event> byDepartureTimeBetween = eventRepository.findByDepartureTimeBetween(start, end, PageRequest.of(0, 10, Sort.Direction.ASC));
 
-        assertThat(byDepartureTimeBetween.size()).isEqualTo(4);
+        assertThat(byDepartureTimeBetween.getTotalElements()).isEqualTo(4);
         for (Event event : byDepartureTimeBetween) {
             assertThat(event.getDepartureTime().isBefore(end) &&
                     event.getDepartureTime().isAfter(start)).isTrue();
         }
 
-        List<Event> byArrivalTimeBetween = eventRepository.findByArrivalTimeBetween(start, end);
-        assertThat(byArrivalTimeBetween.size()).isEqualTo(3);
+        Page<Event> byArrivalTimeBetween = eventRepository.findByArrivalTimeBetween(start, end, PageRequest.of(0, 10, Sort.Direction.ASC));
+        assertThat(byArrivalTimeBetween.getTotalElements()).isEqualTo(3);
         for (Event event : byArrivalTimeBetween) {
             assertThat(event.getDepartureTime().isBefore(end) &&
                     event.getDepartureTime().isAfter(start)).isTrue();
         }
 
-        List<Event> between = eventRepository.findByDepartureTimeBetweenAndArrivalTimeBetween(start, end,
-                start.plusHours(1).plusMinutes(1), end.plusHours(1).plusMinutes(1));
-        assertThat(between.size()).isEqualTo(4);
+        Page<Event> between = eventRepository.findByDepartureTimeBetweenAndArrivalTimeBetween(start, end,
+                start.plusHours(1).plusMinutes(1), end.plusHours(1).plusMinutes(1), PageRequest.of(0, 10, Sort.Direction.ASC));
+        assertThat(between.getSize()).isEqualTo(4);
     }
 
     private Event createEvent() {
