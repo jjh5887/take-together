@@ -1,0 +1,15 @@
+[source,bash]
+----
+$ curl 'http://localhost:8080/event' -i -X POST \
+    -H 'Content-Type: application/json;charset=UTF-8' \
+    -H 'X-AUTH-TOKEN: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0QHRlc3QuY29tIiwiaWF0IjoxNjM1NDA4NDk4LCJleHAiOjE2MzU0MTAyOTh9.qpPuIF1hZ45IsSnjKhks_mWwDErP2U83_4S11tlWLjc' \
+    -d '{
+  "name" : "test",
+  "departure" : "Incheon",
+  "destination" : "Seoul",
+  "departureTime" : "2021-10-12T08:00:01",
+  "arrivalTime" : "2021-10-12T08:45:01",
+  "price" : 5000,
+  "totalNum" : 4
+}'
+----

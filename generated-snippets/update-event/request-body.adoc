@@ -1,0 +1,14 @@
+[source,options="nowrap"]
+----
+{
+  "name" : "after",
+  "departure" : "after dep",
+  "destination" : "after dest",
+  "departureTime" : "2021-10-12T08:00:01",
+  "arrivalTime" : "2021-10-12T08:45:01",
+  "price" : 5000,
+  "totalNum" : 4,
+  "host_id" : 114,
+  "participants_id" : [ 114 ]
+}
+----

@@ -1,0 +1,56 @@
+|===
+|Path|Type|Description
+
+|`+id+`
+|`+Number+`
+|이벤트의 id
+
+|`+name+`
+|`+String+`
+|이벤트의 이름
+
+|`+departure+`
+|`+String+`
+|이벤트의 출발지
+
+|`+destination+`
+|`+String+`
+|이벤트의 도착지
+
+|`+departureTime+`
+|`+String+`
+|이벤트의 출발시간
+
+|`+arrivalTime+`
+|`+String+`
+|이벤트의 도착시간
+
+|`+price+`
+|`+Number+`
+|이벤트의 가격
+
+|`+totalNum+`
+|`+Number+`
+|이벤트 참여 가능한 인원
+
+|`+nowNum+`
+|`+Number+`
+|이벤트 현재 참여 인원
+
+|`+host.id+`
+|`+Number+`
+|이벤트 주인의 id
+
+|`+participants[].id+`
+|`+Number+`
+|이벤트 참여자의 id
+
+|`+links[].rel+`
+|`+String+`
+|링크의 이름
+
+|`+links[].href+`
+|`+String+`
+|링크의 url
+
+|===

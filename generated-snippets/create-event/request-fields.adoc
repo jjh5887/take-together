@@ -1,0 +1,32 @@
+|===
+|Path|Type|Description
+
+|`+name+`
+|`+String+`
+|이벤트 이름
+
+|`+departure+`
+|`+String+`
+|이벤트 출발지
+
+|`+destination+`
+|`+String+`
+|이벤트 도착지
+
+|`+departureTime+`
+|`+class java.time.LocalDateTime+`
+|이벤트 출발 시간
+
+|`+arrivalTime+`
+|`+class java.time.LocalDateTime+`
+|이벤트 도착 시간
+
+|`+price+`
+|`+Number+`
+|이벤트 가격
+
+|`+totalNum+`
+|`+Number+`
+|이벤트 인원
+
+|===

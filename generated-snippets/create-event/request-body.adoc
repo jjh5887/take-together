@@ -1,0 +1,12 @@
+[source,options="nowrap"]
+----
+{
+  "name" : "test",
+  "departure" : "Incheon",
+  "destination" : "Seoul",
+  "departureTime" : "2021-10-12T08:00:01",
+  "arrivalTime" : "2021-10-12T08:45:01",
+  "price" : 5000,
+  "totalNum" : 4
+}
+----
