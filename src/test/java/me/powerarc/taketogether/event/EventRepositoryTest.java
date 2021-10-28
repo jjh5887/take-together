@@ -10,7 +10,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.awt.print.Pageable;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -87,7 +86,8 @@ class EventRepositoryTest {
         // Then
         start = LocalDateTime.of(2021, 10, 12, 1, 0);
         end = LocalDateTime.of(2021, 10, 12, 4, 5);
-        Page<Event> byDepartureTimeBetween = eventRepository.findByDepartureTimeBetween(start, end, PageRequest.of(0, 10, Sort.Direction.ASC));
+        PageRequest of = PageRequest.of(0, 10, Sort.Direction.ASC, "id");
+        Page<Event> byDepartureTimeBetween = eventRepository.findByDepartureTimeBetween(start, end, of);
 
         assertThat(byDepartureTimeBetween.getTotalElements()).isEqualTo(4);
         for (Event event : byDepartureTimeBetween) {
@@ -95,7 +95,7 @@ class EventRepositoryTest {
                     event.getDepartureTime().isAfter(start)).isTrue();
         }
 
-        Page<Event> byArrivalTimeBetween = eventRepository.findByArrivalTimeBetween(start, end, PageRequest.of(0, 10, Sort.Direction.ASC));
+        Page<Event> byArrivalTimeBetween = eventRepository.findByArrivalTimeBetween(start, end, PageRequest.of(0, 10, Sort.Direction.ASC, "id"));
         assertThat(byArrivalTimeBetween.getTotalElements()).isEqualTo(3);
         for (Event event : byArrivalTimeBetween) {
             assertThat(event.getDepartureTime().isBefore(end) &&
@@ -103,8 +103,8 @@ class EventRepositoryTest {
         }
 
         Page<Event> between = eventRepository.findByDepartureTimeBetweenAndArrivalTimeBetween(start, end,
-                start.plusHours(1).plusMinutes(1), end.plusHours(1).plusMinutes(1), PageRequest.of(0, 10, Sort.Direction.ASC));
-        assertThat(between.getSize()).isEqualTo(4);
+                start.plusHours(1).plusMinutes(1), end.plusHours(1).plusMinutes(1), PageRequest.of(0, 10, Sort.Direction.ASC, "id"));
+        assertThat(between.getTotalElements()).isEqualTo(4L);
     }
 
     private Event createEvent() {

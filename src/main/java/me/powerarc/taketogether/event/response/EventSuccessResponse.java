@@ -9,5 +9,5 @@ import me.powerarc.taketogether.event.EventResource;
 public class EventSuccessResponse {
     private int status;
     private String message;
-    private EventResource event;
+    private EventResource data;
 }

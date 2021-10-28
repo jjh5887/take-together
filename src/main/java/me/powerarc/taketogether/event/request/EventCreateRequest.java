@@ -1,6 +1,5 @@
 package me.powerarc.taketogether.event.request;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

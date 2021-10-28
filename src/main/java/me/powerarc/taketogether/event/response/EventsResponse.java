@@ -11,5 +11,5 @@ import org.springframework.hateoas.PagedModel;
 public class EventsResponse {
     private int status;
     private String message;
-    private PagedModel<EntityModel<Event>> events;
+    private PagedModel<EntityModel<Event>> data;
 }
