@@ -1,6 +1,5 @@
 package me.powerarc.taketogether.account.response;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.validation.Errors;

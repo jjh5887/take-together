@@ -11,6 +11,7 @@ import me.powerarc.taketogether.jwt.JwtTokenProvider;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.Link;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -40,7 +41,7 @@ public class EventController {
         Event event = eventService.createEvent(eventCreateRequest, userEmail);
         return ResponseEntity.ok(EventResponse.builder()
                 .status(HttpStatus.OK.value())
-                .event(new EventResource(event, userEmail))
+                .data(new EventResource(event, userEmail, Link.of("/docs/index.html#resources-events-create").withRel("profile")))
                 .message("success").build());
     }
 
@@ -52,7 +53,7 @@ public class EventController {
         return ResponseEntity.ok().body(EventResponse.builder()
                 .status(HttpStatus.OK.value())
                 .message("success")
-                .event(new EventResource(event, userEmail)).build());
+                .data(new EventResource(event, userEmail, Link.of("/docs/index.html#resources-event").withRel("profile"))).build());
     }
 
     @GetMapping("/name/{name}")
@@ -66,7 +67,7 @@ public class EventController {
         return ResponseEntity.ok(EventsResponse.builder()
                 .status(HttpStatus.OK.value())
                 .message("success")
-                .events(eventResources).build());
+                .data(eventResources).build());
     }
 
     @GetMapping("/destination/{destination}")
@@ -80,7 +81,7 @@ public class EventController {
         return ResponseEntity.ok(EventsResponse.builder()
                 .status(HttpStatus.OK.value())
                 .message("success")
-                .events(eventResources).build());
+                .data(eventResources).build());
     }
 
     @GetMapping("/departure/{departure}")
@@ -94,7 +95,7 @@ public class EventController {
         return ResponseEntity.ok(EventsResponse.builder()
                 .status(HttpStatus.OK.value())
                 .message("success")
-                .events(eventResources).build());
+                .data(eventResources).build());
     }
 
     @PutMapping("/{id}")
@@ -107,7 +108,7 @@ public class EventController {
         Event event = eventService.updateEvent(eventUpdateRequest, id, userEmail);
         return ResponseEntity.ok(EventResponse.builder()
                 .status(HttpStatus.OK.value())
-                .event(new EventResource(event, userEmail))
+                .data(new EventResource(event, userEmail, Link.of("/docs/index.html#resources-events-update").withRel("profile")))
                 .message("success").build());
     }
 
@@ -119,7 +120,7 @@ public class EventController {
         return ResponseEntity.ok().body(EventSuccessResponse.builder()
                 .status(HttpStatus.OK.value())
                 .message("success")
-                .event(new EventResource(userEmail)).build());
+                .data(new EventResource(userEmail, Link.of("/docs/index.html#resources-events-delete").withRel("profile"))).build());
     }
 
     private ResponseEntity<EventFailResponse> badRequest(Errors errors) {

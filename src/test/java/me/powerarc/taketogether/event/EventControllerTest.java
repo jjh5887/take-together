@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import me.powerarc.taketogether.account.Account;
 import me.powerarc.taketogether.account.AccountRepository;
 import me.powerarc.taketogether.account.AccountRole;
+import me.powerarc.taketogether.common.RestDocsConfiguration;
 import me.powerarc.taketogether.event.request.EventCreateRequest;
 import me.powerarc.taketogether.event.request.EventUpdateRequest;
 import me.powerarc.taketogether.jwt.JwtTokenProvider;
@@ -11,10 +12,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -26,13 +30,20 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
+import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
+import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
+import static org.springframework.restdocs.payload.PayloadDocumentation.*;
+import static org.springframework.restdocs.request.RequestDocumentation.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@AutoConfigureRestDocs
 @SpringBootTest
 @AutoConfigureMockMvc
+@Import(RestDocsConfiguration.class)
 @ActiveProfiles("test")
 class EventControllerTest {
 
@@ -71,18 +82,55 @@ class EventControllerTest {
         account.addEvent(event);
         accountRepository.save(account);
 
+        String token = jwtTokenProvider.createToken(account.getEmail());
+
         // Then
-        mockMvc.perform(get("/event/" + event.getId())
-                .contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(RestDocumentationRequestBuilders.get("/event/{id}", event.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("X-AUTH-TOKEN", token))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("status", is(HttpStatus.OK.value())))
                 .andExpect(jsonPath("message", is("success")))
-                .andExpect(jsonPath("$.event.id").value(event.getId()))
-                .andExpect(jsonPath("$.event.departure").value(event.getDeparture()))
-                .andExpect(jsonPath("$.event.arrivalTime").value(event.getArrivalTime().toString()))
-                .andExpect(jsonPath("$.event.host.id").value(account.getId().toString()))
-                .andExpect(jsonPath("$.event.participants[0].id").value(account.getId().toString()))
+                .andExpect(jsonPath("$.data.id").value(event.getId()))
+                .andExpect(jsonPath("$.data.departure").value(event.getDeparture()))
+                .andExpect(jsonPath("$.data.arrivalTime").value(event.getArrivalTime().toString()))
+                .andExpect(jsonPath("$.data.host.id").value(account.getId().toString()))
+                .andExpect(jsonPath("$.data.participants[0].id").value(account.getId().toString()))
+                .andDo(document("get-event",
+                        requestHeaders(
+                                headerWithName("X-AUTH-TOKEN").description("사용자 인증용 토큰\n\n" +
+                                        "인증된 토큰이라면 인증시에 요청 가능한 링크 추가 제공")
+                        ),
+                        pathParameters(
+                                parameterWithName("id").description("이벤트 id")
+                        ),
+                        responseFields(
+                                fieldWithPath("status").description("응답 상태"),
+                                fieldWithPath("message").description("응답 메시지")
+                        ).andWithPrefix("data.",
+                                fieldWithPath("id").description("이벤트 id"),
+                                fieldWithPath("name").description("이벤트 이름"),
+                                fieldWithPath("departure").description("이벤트 출발지"),
+                                fieldWithPath("destination").description("이벤트 도착지"),
+                                fieldWithPath("departureTime").description("이벤트 출발시간"),
+                                fieldWithPath("arrivalTime").description("이벤트 도착시간"),
+                                fieldWithPath("price").description("이벤트 가격"),
+                                fieldWithPath("totalNum").description("이벤트 참여 가능한 인원"),
+                                fieldWithPath("nowNum").description("이벤트 현재 참여 인원"),
+                                fieldWithPath("host.id").description("이벤트 주인 id"),
+                                fieldWithPath("participants[].id").description("이벤트 참여자 id"),
+                                fieldWithPath("links[].rel").description("링크 이름\n\n" +
+                                        "self: 자기 자신 +\n" +
+                                        "get-event: 이벤트 조회 +\n" +
+                                        "get-events-name: 이름으로 이벤트 조회 +\n" +
+                                        "create-event: 이벤트 생성 +\n" +
+                                        "update-event: 이벤트 수정 +\n" +
+                                        "delete-event: 이벤트 삭제 +\n" +
+                                        "profile: REST-API-Guide"),
+                                fieldWithPath("links[].href").description("링크")
+                        )
+                ))
         ;
     }
 
@@ -104,24 +152,63 @@ class EventControllerTest {
         Account account = makeAccount("test@test.com");
         Event event = makeEvent(account, "test", "Incheon", "Seoul");
         account.addEvent(event);
+        for (int i = 0; i < 100; i++) {
+            account.addEvent(makeEvent(account, "test" + i, "Incheon" + i, "Seoul" + i));
+        }
         accountRepository.save(account);
 
+        String token = jwtTokenProvider.createToken(account.getEmail());
+
         // Then
-        mockMvc.perform(get("/event/name/" + event.getName())
-                .contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(RestDocumentationRequestBuilders.get("/event/name/{name}", event.getName())
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("X-AUTH-TOKEN", token)
+                .param("page", "0")
+                .param("size", "10"))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("status", is(HttpStatus.OK.value())))
                 .andExpect(jsonPath("message", is("success")))
                 .andExpect(jsonPath("status", is(HttpStatus.OK.value())))
                 .andExpect(jsonPath("message", is("success")))
-                .andExpect(jsonPath("$.events.content[0].id").value(event.getId()))
-                .andExpect(jsonPath("$.events.content[0].name").value(event.getName()))
-                .andExpect(jsonPath("$.events.content[0].departure").value(event.getDeparture()))
-                .andExpect(jsonPath("$.events.content[0].arrivalTime").value(event.getArrivalTime().toString()))
-                .andExpect(jsonPath("$.events.content[0].host.id").value(account.getId().toString()))
-                .andExpect(jsonPath("$.events.content[0].participants[0].id").value(account.getId().toString()))
-                .andExpect(jsonPath("$.events.content[1]").doesNotExist())
+                .andExpect(jsonPath("$.data.content[0].id").value(event.getId()))
+                .andExpect(jsonPath("$.data.content[0].name").value(event.getName()))
+                .andExpect(jsonPath("$.data.content[0].departure").value(event.getDeparture()))
+                .andExpect(jsonPath("$.data.content[0].arrivalTime").value(event.getArrivalTime().toString()))
+                .andExpect(jsonPath("$.data.content[0].host.id").value(account.getId().toString()))
+                .andExpect(jsonPath("$.data.content[0].participants[0].id").value(account.getId().toString()))
+                .andDo(document("get-events-name",
+                        requestHeaders(
+                                headerWithName("X-AUTH-TOKEN").description("사용자 인증용 토큰\n\n" +
+                                        "인증된 토큰이라면 인증시에 요청 가능한 링크 추가 제공")
+                        ),
+                        pathParameters(
+                                parameterWithName("name").description("이벤트 이름")
+                        )
+                        ,
+                        requestParameters(
+                                parameterWithName("page").description("요청 페이지 \n\n페이지는 0부터 시작"),
+                                parameterWithName("size").description("페이지 당 이벤트 개수")
+                        ),
+                        relaxedResponseFields(
+                                fieldWithPath("status").description("응답 상태"),
+                                fieldWithPath("message").description("응답 메시지")
+                        ).andWithPrefix("data.",
+                                fieldWithPath("content[]").description("이벤트 목록\n\n link:#resources-event_response_fields[이벤트 조회 참조]"),
+                                fieldWithPath("links[].rel").description("링크 이름\n\n" +
+                                        "first: 첫 페이지 +\n" +
+                                        "self: 현재 페이지 +\n" +
+                                        "next: 다음 페이지 +\n" +
+                                        "last: 마지막 페이지 + \n" +
+                                        "profile: REST-API-Guide"),
+                                fieldWithPath("links[].href").description("링크")
+                        ).andWithPrefix("data.page.",
+                                fieldWithPath("size").description("페이지 당 이벤트 수"),
+                                fieldWithPath("totalElements").description("전체 이벤트 수"),
+                                fieldWithPath("totalPages").description("전체 페이지 수"),
+                                fieldWithPath("number").description("전체 페이지 번호")
+                        )
+                ))
         ;
     }
 
@@ -140,7 +227,7 @@ class EventControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("status", is(HttpStatus.OK.value())))
                 .andExpect(jsonPath("message", is("success")))
-                .andExpect(jsonPath("$.events.content").isEmpty())
+                .andExpect(jsonPath("$.data.content").isEmpty())
         ;
     }
 
@@ -166,8 +253,8 @@ class EventControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("status", is(HttpStatus.OK.value())))
                 .andExpect(jsonPath("message", is("success")))
-                .andExpect(jsonPath("$.events.content[*].departure", hasItem(departure)))
-                .andExpect(jsonPath("$.events.content", hasSize(2)))
+                .andExpect(jsonPath("$.data.content[*].departure", hasItem(departure)))
+                .andExpect(jsonPath("$.data.content", hasSize(2)))
         ;
     }
 
@@ -192,8 +279,8 @@ class EventControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("status", is(HttpStatus.OK.value())))
                 .andExpect(jsonPath("message", is("success")))
-                .andExpect(jsonPath("$.events.content[*].destination", hasItem(destination)))
-                .andExpect(jsonPath("$.events.content", hasSize(2)))
+                .andExpect(jsonPath("$.data.content[*].destination", hasItem(destination)))
+                .andExpect(jsonPath("$.data.content", hasSize(2)))
         ;
     }
 
@@ -239,7 +326,47 @@ class EventControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("status", is(HttpStatus.OK.value())))
                 .andExpect(jsonPath("message", is("success")))
-                .andExpect(jsonPath("$.event.links[0].rel", is("self")))
+                .andExpect(jsonPath("$.data.links[0].rel", is("profile")))
+                .andDo(document("create-event",
+                        requestHeaders(
+                                headerWithName("X-AUTH-TOKEN").description("사용자 인증용 토큰")
+                        ),
+                        requestFields(
+                                fieldWithPath("name").description("이벤트 이름"),
+                                fieldWithPath("departure").description("이벤트 출발지"),
+                                fieldWithPath("destination").description("이벤트 도착지"),
+                                fieldWithPath("departureTime").description("이벤트 출발 시간").type(LocalDateTime.class),
+                                fieldWithPath("arrivalTime").description("이벤트 도착 시간").type(LocalDateTime.class),
+                                fieldWithPath("price").description("이벤트 가격"),
+                                fieldWithPath("totalNum").description("이벤트 인원")
+                        ),
+                        responseFields(
+                                fieldWithPath("status").description("응답 상태"),
+                                fieldWithPath("message").description("응답 메시지")
+                        ).andWithPrefix("data.",
+                                fieldWithPath("id").description("이벤트 id"),
+                                fieldWithPath("name").description("이벤트 이름"),
+                                fieldWithPath("departure").description("이벤트 출발지"),
+                                fieldWithPath("destination").description("이벤트 도착지"),
+                                fieldWithPath("departureTime").description("이벤트 출발시간"),
+                                fieldWithPath("arrivalTime").description("이벤트 도착시간"),
+                                fieldWithPath("price").description("이벤트 가격"),
+                                fieldWithPath("totalNum").description("이벤트 참여 가능한 인원"),
+                                fieldWithPath("nowNum").description("이벤트 현재 참여 인원"),
+                                fieldWithPath("host.id").description("이벤트 주인 id"),
+                                fieldWithPath("participants[].id").description("이벤트 참여자 id"),
+                                fieldWithPath("links[].rel").description("링크 이름\n\n" +
+                                        "self: 자기 자신 +\n" +
+                                        "get-event: 이벤트 조회 +\n" +
+                                        "get-events-name: 이름으로 이벤트 조회 +\n" +
+                                        "create-event: 이벤트 생성 +\n" +
+                                        "update-event: 이벤트 수정 +\n" +
+                                        "delete-event: 이벤트 삭제 + \n" +
+                                        "profile: REST-API-Guide"),
+                                fieldWithPath("links[].href").description("링크")
+                        )
+                ))
+
         ;
 
 //        List<Event> byNameContains = eventRepository.findByNameContains(eventCreateRequest.getName());
@@ -323,7 +450,7 @@ class EventControllerTest {
         String token = jwtTokenProvider.createToken(email);
 
         // Then
-        mockMvc.perform(put("/event/" + event.getId())
+        mockMvc.perform(RestDocumentationRequestBuilders.put("/event/{id}", event.getId())
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("X-AUTH-TOKEN", token)
                 .content(objectMapper.writeValueAsString(eventUpdateRequest)))
@@ -331,6 +458,51 @@ class EventControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("status", is(HttpStatus.OK.value())))
                 .andExpect(jsonPath("message", is("success")))
+                .andDo(document("update-event",
+                        requestHeaders(
+                                headerWithName("X-AUTH-TOKEN").description("사용자 인증용 토큰")
+                        ),
+                        pathParameters(
+                                parameterWithName("id").description("이벤트 id")
+                        ),
+                        requestFields(
+                                fieldWithPath("name").description("이벤트 이름"),
+                                fieldWithPath("departure").description("이벤트 출발지"),
+                                fieldWithPath("destination").description("이벤트 도착지"),
+                                fieldWithPath("departureTime").description("이벤트 출발 시간").type(LocalDateTime.class),
+                                fieldWithPath("arrivalTime").description("이벤트 도착 시간").type(LocalDateTime.class),
+                                fieldWithPath("price").description("이벤트 가격"),
+                                fieldWithPath("totalNum").description("이벤트 인원"),
+                                fieldWithPath("host_id").description("이벤트 주인 id"),
+                                fieldWithPath("participants_id[]").description("이벤트 참여자 id")
+                        ),
+                        responseFields(
+                                fieldWithPath("status").description("응답 상태"),
+                                fieldWithPath("message").description("응답 메시지")
+                        ).andWithPrefix("data.",
+                                fieldWithPath("id").description("이벤트 id"),
+                                fieldWithPath("name").description("이벤트 이름"),
+                                fieldWithPath("departure").description("이벤트 출발지"),
+                                fieldWithPath("destination").description("이벤트 도착지"),
+                                fieldWithPath("departureTime").description("이벤트 출발시간"),
+                                fieldWithPath("arrivalTime").description("이벤트 도착시간"),
+                                fieldWithPath("price").description("이벤트 가격"),
+                                fieldWithPath("totalNum").description("이벤트 참여 가능한 인원"),
+                                fieldWithPath("nowNum").description("이벤트 현재 참여 인원"),
+                                fieldWithPath("host.id").description("이벤트 주인 id"),
+                                fieldWithPath("participants[].id").description("이벤트 참여자 id"),
+                                fieldWithPath("links[].rel").description("링크 이름\n\n" +
+                                        "self: 자기 자신 +\n" +
+                                        "get-event: 이벤트 조회 +\n" +
+                                        "get-events-name: 이름으로 이벤트 조회 +\n" +
+                                        "create-event: 이벤트 생성 +\n" +
+                                        "update-event: 이벤트 수정 +\n" +
+                                        "delete-event: 이벤트 삭제 +\n" +
+                                        "profile: REST-API-Guide"),
+                                fieldWithPath("links[].href").description("링크")
+                        )
+                ))
+
         ;
 
         // Given
@@ -508,16 +680,40 @@ class EventControllerTest {
 
         String token = jwtTokenProvider.createToken(email);
 
-        mockMvc.perform(delete("/event/" + event.getId())
+        mockMvc.perform(RestDocumentationRequestBuilders.delete("/event/{id}", event.getId())
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("X-AUTH-TOKEN", token))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("status", is(HttpStatus.OK.value())))
                 .andExpect(jsonPath("message", is("success")))
-                .andExpect(jsonPath("$.event.links[0].rel", is("query-event-id")))
-                .andExpect(jsonPath("$.event.links[1].rel", is("query-events-name")))
-                .andExpect(jsonPath("$.event.links[2].rel", is("create-event")))
+                .andExpect(jsonPath("$.data.links[0].rel", is("profile")))
+                .andExpect(jsonPath("$.data.links[1].rel", is("get-event")))
+                .andExpect(jsonPath("$.data.links[2].rel", is("get-events-name")))
+                .andExpect(jsonPath("$.data.links[3].rel", is("create-event")))
+                .andDo(document("delete-event",
+                        requestHeaders(
+                                headerWithName("X-AUTH-TOKEN").description("사용자 인증용 토큰\n\n" +
+                                        "인증된 토큰이라면 인증시에 요청 가능한 링크 추가 제공")
+                        ),
+                        pathParameters(
+                                parameterWithName("id").description("이벤트 id")
+                        ),
+                        responseFields(
+                                fieldWithPath("status").description("응답 상태"),
+                                fieldWithPath("message").description("응답 메시지")
+                        ).andWithPrefix("data.links[]",
+                                fieldWithPath("rel").description("링크 이름\n\n" +
+                                        "self: 자기 자신 +\n" +
+                                        "get-event: 이벤트 조회 +\n" +
+                                        "get-events-name: 이름으로 이벤트 조회 +\n" +
+                                        "create-event: 이벤트 생성 +\n" +
+                                        "update-event: 이벤트 수정 +\n" +
+                                        "delete-event: 이벤트 삭제 +\n" +
+                                        "profile: REST-API-Guide"),
+                                fieldWithPath("href").description("링크")
+                        )
+                ))
         ;
 
         // Then

@@ -10,5 +10,5 @@ public class EventResponse {
     private int status;
     private String message;
 
-    private EventResource event;
+    private EventResource data;
 }
