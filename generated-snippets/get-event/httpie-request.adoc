@@ -1,0 +1,6 @@
+[source,bash]
+----
+$ http GET 'http://localhost:8080/event/127' \
+    'Content-Type:application/json;charset=UTF-8' \
+    'X-AUTH-TOKEN:eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0QHRlc3QuY29tIiwiaWF0IjoxNjM1NDA4NDk4LCJleHAiOjE2MzU0MTAyOTh9.qpPuIF1hZ45IsSnjKhks_mWwDErP2U83_4S11tlWLjc'
+----

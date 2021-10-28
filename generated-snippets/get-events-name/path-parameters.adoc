@@ -1,0 +1,8 @@
+.+/event/name/{name}+
+|===
+|Parameter|Description
+
+|`+name+`
+|이벤트 이름
+
+|===

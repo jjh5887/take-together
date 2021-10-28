@@ -1,0 +1,28 @@
+|===
+|Path|Type|Description
+
+|`+status+`
+|`+Number+`
+|응답 상태
+
+|`+message+`
+|`+String+`
+|응답 메시지
+
+|`+data.links[]rel+`
+|`+String+`
+|링크 이름
+
+self: 자기 자신 +
+get-event: 이벤트 조회 +
+get-events-name: 이름으로 이벤트 조회 +
+create-event: 이벤트 생성 +
+update-event: 이벤트 수정 +
+delete-event: 이벤트 삭제 +
+profile: REST-API-Guide
+
+|`+data.links[]href+`
+|`+String+`
+|링크
+
+|===

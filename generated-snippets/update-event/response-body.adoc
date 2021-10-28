@@ -1,0 +1,40 @@
+[source,options="nowrap"]
+----
+{
+  "status" : 200,
+  "message" : "success",
+  "data" : {
+    "id" : 113,
+    "name" : "after",
+    "departure" : "after dep",
+    "destination" : "after dest",
+    "departureTime" : "2021-10-12T08:00:01",
+    "arrivalTime" : "2021-10-12T08:45:01",
+    "price" : 5000,
+    "totalNum" : 4,
+    "nowNum" : 1,
+    "host" : {
+      "id" : 114
+    },
+    "participants" : [ {
+      "id" : 114
+    } ],
+    "links" : [ {
+      "rel" : "profile",
+      "href" : "/docs/index.html#resources-events-update"
+    }, {
+      "rel" : "self",
+      "href" : "http://localhost:8080/event/113"
+    }, {
+      "rel" : "get-event",
+      "href" : "http://localhost:8080/event"
+    }, {
+      "rel" : "get-events-name",
+      "href" : "http://localhost:8080/event/name"
+    }, {
+      "rel" : "create-event",
+      "href" : "http://localhost:8080/event"
+    } ]
+  }
+}
+----
