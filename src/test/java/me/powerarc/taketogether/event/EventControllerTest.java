@@ -143,6 +143,11 @@ class EventControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("status", is(HttpStatus.NOT_FOUND.value())))
                 .andExpect(jsonPath("message", is("존재하지 않는 이벤트입니다.")))
+                .andDo(document("error",
+                        responseFields(
+                                fieldWithPath("status").description("에러 코드"),
+                                fieldWithPath("message").description("에러 원인")
+                        )))
         ;
     }
 
@@ -619,7 +624,7 @@ class EventControllerTest {
                 .andDo(print())
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("status", is(HttpStatus.BAD_REQUEST.value())))
-                .andExpect(jsonPath("message", is("fail")))
+                .andExpect(jsonPath("message").exists())
         ;
 
         // Given
@@ -777,10 +782,7 @@ class EventControllerTest {
                 .andDo(print())
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("status", is(HttpStatus.BAD_REQUEST.value())))
-                .andExpect(jsonPath("message", is("fail")))
-                .andExpect(jsonPath("$.errors[0].objectName", is("eventCreateRequest")))
-                .andExpect(jsonPath("$.errors[0].code", is("wrongArrivalTime")))
-                .andExpect(jsonPath("$.errors[0].defaultMessage", is("Arrival time is earlier than departure time")))
+                .andExpect(jsonPath("message").exists())
         ;
     }
 
@@ -801,7 +803,7 @@ class EventControllerTest {
                 .andDo(print())
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("status", is(HttpStatus.BAD_REQUEST.value())))
-                .andExpect(jsonPath("message", is("fail")))
+                .andExpect(jsonPath("message").exists())
         ;
     }
 

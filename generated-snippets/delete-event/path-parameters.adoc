@@ -1,8 +1,0 @@
-.+/event/{id}+
-|===
-|Parameter|Description
-
-|`+id+`
-|이벤트 id
-
-|===

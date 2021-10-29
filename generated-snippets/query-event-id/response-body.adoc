@@ -1,4 +1,0 @@
-[source,options="nowrap"]
-----
-{"status":200,"message":"success","event":{"id":2,"name":"test","departure":"Incheon","destination":"Seoul","departureTime":"2021-10-12T08:00:01","arrivalTime":"2021-10-12T08:45:01","price":5000,"totalNum":4,"nowNum":1,"host":{"id":1},"participants":[{"id":1}],"links":[{"rel":"self","href":"http://localhost:8080/event/2"},{"rel":"query-event-id","href":"http://localhost:8080/event"},{"rel":"query-events-name","href":"http://localhost:8080/event/name"},{"rel":"create-event","href":"http://localhost:8080/event"},{"rel":"update-event","href":"http://localhost:8080/event/2"},{"rel":"delete-event","href":"http://localhost:8080/event/2"}]}}
-----

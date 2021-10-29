@@ -1,9 +1,10 @@
 package me.powerarc.taketogether.config;
 
+import lombok.RequiredArgsConstructor;
 import me.powerarc.taketogether.common.AppProperties;
+import me.powerarc.taketogether.jwt.JwtAuthenticationEntryPoint;
 import me.powerarc.taketogether.jwt.JwtAuthenticationFilter;
 import me.powerarc.taketogether.jwt.JwtTokenProvider;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -19,13 +20,13 @@ import java.util.List;
 import java.util.Map;
 
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
-    @Autowired
-    JwtTokenProvider jwtTokenProvider;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final AppProperties appProperties;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
-    @Autowired
-    AppProperties appProperties;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -59,6 +60,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         http
                 .authorizeRequests()
                 .anyRequest().permitAll()
+                .and()
+                .exceptionHandling().authenticationEntryPoint(jwtAuthenticationEntryPoint)
                 .and()
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class)
         ;
