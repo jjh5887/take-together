@@ -1,7 +1,0 @@
-|===
-|Name|Description
-
-|`+X-AUTH-TOKEN+`
-|사용자 인증용 토큰
-
-|===

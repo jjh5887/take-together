@@ -3,10 +3,10 @@ package me.powerarc.taketogether.event;
 import lombok.RequiredArgsConstructor;
 import me.powerarc.taketogether.event.request.EventCreateRequest;
 import me.powerarc.taketogether.event.request.EventUpdateRequest;
-import me.powerarc.taketogether.event.response.EventFailResponse;
 import me.powerarc.taketogether.event.response.EventResponse;
 import me.powerarc.taketogether.event.response.EventSuccessResponse;
 import me.powerarc.taketogether.event.response.EventsResponse;
+import me.powerarc.taketogether.exception.ExceptionResponse;
 import me.powerarc.taketogether.jwt.JwtTokenProvider;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -123,10 +123,9 @@ public class EventController {
                 .data(new EventResource(userEmail, Link.of("/docs/index.html#resources-events-delete").withRel("profile"))).build());
     }
 
-    private ResponseEntity<EventFailResponse> badRequest(Errors errors) {
-        return ResponseEntity.badRequest().body(EventFailResponse.builder()
+    private ResponseEntity badRequest(Errors errors) {
+        return ResponseEntity.badRequest().body(ExceptionResponse.builder()
                 .status(HttpStatus.BAD_REQUEST.value())
-                .message("fail")
-                .errors(errors).build());
+                .message(errors.getAllErrors().get(0).getDefaultMessage()).build());
     }
 }

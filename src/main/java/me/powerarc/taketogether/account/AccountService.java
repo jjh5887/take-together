@@ -64,7 +64,7 @@ public class AccountService implements UserDetailsService {
     @SneakyThrows
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        return accountRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException(email));
+        return accountRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("존재하지 않는 계정입니다."));
     }
 
     public void login(AccountLoginRequest accountLoginRequest) {
