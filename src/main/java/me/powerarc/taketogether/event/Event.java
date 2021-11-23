@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import me.powerarc.taketogether.account.Account;
 import me.powerarc.taketogether.account.serializer.AccountSerializer;
 import me.powerarc.taketogether.account.serializer.AccountSetSerializer;
@@ -13,13 +14,15 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
+@Inheritance(strategy = InheritanceType.JOINED)
 @Entity
 @Getter
 @Setter
-@Builder
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(of = "id")
+@DiscriminatorColumn(name = "type")
 public class Event {
 
     @Id

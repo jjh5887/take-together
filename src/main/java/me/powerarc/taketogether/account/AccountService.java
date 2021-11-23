@@ -19,17 +19,24 @@ import org.springframework.stereotype.Service;
 @Service
 public class AccountService implements UserDetailsService {
 
-    @Autowired
+    final
     JwtTokenProvider jwtTokenProvider;
 
-    @Autowired
+    final
     AccountRepository accountRepository;
 
-    @Autowired
+    final
     ModelMapper modelMapper;
 
-    @Autowired
+    final
     PasswordEncoder passwordEncoder;
+
+    public AccountService(JwtTokenProvider jwtTokenProvider, AccountRepository accountRepository, ModelMapper modelMapper, PasswordEncoder passwordEncoder) {
+        this.jwtTokenProvider = jwtTokenProvider;
+        this.accountRepository = accountRepository;
+        this.modelMapper = modelMapper;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     public void createAccount(AccountRegistRequest accountRegistRequest) {
         if (accountRepository.existsByEmail(accountRegistRequest.getEmail()))

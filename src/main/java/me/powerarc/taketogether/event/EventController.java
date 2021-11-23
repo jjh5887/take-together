@@ -10,7 +10,6 @@ import me.powerarc.taketogether.exception.ExceptionResponse;
 import me.powerarc.taketogether.jwt.JwtTokenProvider;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.http.HttpStatus;
@@ -26,28 +25,29 @@ import javax.validation.Valid;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping(value = "/event", produces = MediaType.APPLICATION_JSON_VALUE)
-public class EventController {
-    private final EventService eventService;
-    private final JwtTokenProvider jwtTokenProvider;
-    private final EventValidator eventValidator;
-    private final EventPagedResourceAssembler pagedResourceAssembler;
+public class EventController<C extends EventCreateRequest, U extends EventUpdateRequest> {
+    protected final EventService eventService;
+    protected final JwtTokenProvider jwtTokenProvider;
+    protected final EventValidator eventValidator;
+    protected final EventPagedResourceAssembler pagedResourceAssembler;
 
     @PostMapping
-    public ResponseEntity createEvent(@RequestBody @Valid EventCreateRequest eventCreateRequest,
+    public ResponseEntity createEvent(@RequestBody @Valid C eventCreateRequest,
                                       Errors errors,
-                                      HttpServletRequest request) throws Exception {
+                                      HttpServletRequest request) {
         if (eventValidator.validate(eventCreateRequest, errors)) return badRequest(errors);
         String userEmail = jwtTokenProvider.getUserEmail(request);
         Event event = eventService.createEvent(eventCreateRequest, userEmail);
+        EventResource profile = new EventResource(event, userEmail, Link.of("/docs/index.html#resources-events-create").withRel("profile"));
         return ResponseEntity.ok(EventResponse.builder()
                 .status(HttpStatus.OK.value())
-                .data(new EventResource(event, userEmail, Link.of("/docs/index.html#resources-events-create").withRel("profile")))
+                .data(profile)
                 .message("success").build());
     }
 
     @GetMapping("/{id}")
     public ResponseEntity getEvent(@PathVariable Long id,
-                                   HttpServletRequest request) {
+                                   HttpServletRequest request) throws Throwable {
         Event event = eventService.getEvent(id);
         String userEmail = jwtTokenProvider.getUserEmail(request);
         return ResponseEntity.ok().body(EventResponse.builder()
@@ -60,9 +60,9 @@ public class EventController {
     public ResponseEntity getEventByName(@PathVariable String name,
                                          Pageable pageable,
                                          HttpServletRequest request) {
-        Page<Event> events = eventService.getEvent(name, pageable);
+        Page events = eventService.getEvent(name, pageable);
         String userEmail = jwtTokenProvider.getUserEmail(request);
-        PagedModel<EntityModel<Event>> eventResources =
+        PagedModel eventResources =
                 pagedResourceAssembler.toModel(events, EventResource::new, userEmail);
         return ResponseEntity.ok(EventsResponse.builder()
                 .status(HttpStatus.OK.value())
@@ -74,9 +74,9 @@ public class EventController {
     public ResponseEntity getEventByDestination(@PathVariable String destination,
                                                 Pageable pageable,
                                                 HttpServletRequest request) {
-        Page<Event> events = eventService.getEventByDestination(destination, pageable);
+        Page events = eventService.getEventByDestination(destination, pageable);
         String userEmail = jwtTokenProvider.getUserEmail(request);
-        PagedModel<EntityModel<Event>> eventResources =
+        PagedModel eventResources =
                 pagedResourceAssembler.toModel(events, EventResource::new, userEmail);
         return ResponseEntity.ok(EventsResponse.builder()
                 .status(HttpStatus.OK.value())
@@ -88,9 +88,9 @@ public class EventController {
     public ResponseEntity getEventByDeparture(@PathVariable String departure,
                                               Pageable pageable,
                                               HttpServletRequest request) {
-        Page<Event> events = eventService.getEventByDeparture(departure, pageable);
+        Page events = eventService.getEventByDeparture(departure, pageable);
         String userEmail = jwtTokenProvider.getUserEmail(request);
-        PagedModel<EntityModel<Event>> eventResources =
+        PagedModel eventResources =
                 pagedResourceAssembler.toModel(events, EventResource::new, userEmail);
         return ResponseEntity.ok(EventsResponse.builder()
                 .status(HttpStatus.OK.value())
@@ -99,10 +99,10 @@ public class EventController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity updateEvent(@RequestBody @Valid EventUpdateRequest eventUpdateRequest,
+    public ResponseEntity updateEvent(@RequestBody @Valid U eventUpdateRequest,
                                       Errors errors,
                                       @PathVariable Long id,
-                                      HttpServletRequest request) {
+                                      HttpServletRequest request) throws Throwable {
         if (eventValidator.validate(eventUpdateRequest, errors)) return badRequest(errors);
         String userEmail = jwtTokenProvider.getUserEmail(request);
         Event event = eventService.updateEvent(eventUpdateRequest, id, userEmail);
@@ -114,7 +114,7 @@ public class EventController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity deleteEvent(@PathVariable Long id,
-                                      HttpServletRequest request) {
+                                      HttpServletRequest request) throws Throwable {
         String userEmail = jwtTokenProvider.getUserEmail(request);
         eventService.deleteEvent(id, userEmail);
         return ResponseEntity.ok().body(EventSuccessResponse.builder()

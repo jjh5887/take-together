@@ -41,7 +41,7 @@ class EventRepositoryTest {
         participants.add(account1);
         participants.add(account2);
         event.setParticipants(participants);
-        Event save = eventRepository.save(event);
+        Event save = (Event) eventRepository.save(event);
 
         // Then
         Optional<Event> byId = eventRepository.findById(save.getId());

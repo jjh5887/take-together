@@ -20,57 +20,56 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class EventService {
-    private final EventRepository eventRepository;
+    protected final EventRepository eventRepository;
     private final AccountService accountService;
     private final ModelMapper modelMapper;
+    protected Class<?> clazz = Event.class;
 
-    public Event createEvent(EventCreateRequest eventCreateRequest, String email) throws Exception {
+    public Event createEvent(EventCreateRequest eventCreateRequest, String email) {
         if (eventRepository.existsByName(eventCreateRequest.getName()))
             throw new WebException(HttpStatus.BAD_REQUEST.value(), "중복된 이름입니다.");
 
         Account account = accountService.getAccount(email);
-
-        Event event = modelMapper.map(eventCreateRequest, Event.class);
+        Event event = (Event) modelMapper.map(eventCreateRequest, clazz);
         event.setHost(account);
         event.addParticipants(account);
-        Event savedEvent = eventRepository.save(event);
-
+        Event savedEvent = (Event) eventRepository.save(event);
         account.addEvent(event);
         accountService.saveAccount(account);
 
         return savedEvent;
     }
 
-    public Event getEvent(Long id) {
-        return eventRepository.findById(id)
+    public Event getEvent(Long id) throws Throwable {
+        return (Event) eventRepository.findById(id)
                 .orElseThrow(() -> new WebException(HttpStatus.NOT_FOUND.value(), "존재하지 않는 이벤트입니다."));
     }
 
-    public Page<Event> getEvent(String name, Pageable pageable) {
+    public Page getEvent(String name, Pageable pageable) {
         return eventRepository.findByNameContains(name, pageable);
     }
 
-    public Page<Event> getEventByDeparture(String departure, Pageable pageable) {
+    public Page getEventByDeparture(String departure, Pageable pageable) {
         return eventRepository.findByDepartureContains(departure, pageable);
     }
 
-    public Page<Event> getEventByDestination(String destination, Pageable pageable) {
+    public Page getEventByDestination(String destination, Pageable pageable) {
         return eventRepository.findByDestinationContains(destination, pageable);
     }
 
-    public Page<Event> getEventByDepartureTime(String startTime, String endTime, Pageable pageable) {
+    public Page getEventByDepartureTime(String startTime, String endTime, Pageable pageable) {
         LocalDateTime start = getLocalDateTime(startTime);
         LocalDateTime end = getLocalDateTime(endTime);
         return eventRepository.findByDepartureTimeBetween(start, end, pageable);
     }
 
-    public Page<Event> getEventByArrivalTime(String startTime, String endTime, Pageable pageable) {
+    public Page getEventByArrivalTime(String startTime, String endTime, Pageable pageable) {
         LocalDateTime start = getLocalDateTime(startTime);
         LocalDateTime end = getLocalDateTime(endTime);
         return eventRepository.findByArrivalTimeBetween(start, end, pageable);
     }
 
-    public Page<Event> getEvent(String startTimeA, String endTimeA, String startTimeB, String endTimeB, Pageable pageable) {
+    public Page getEvent(String startTimeA, String endTimeA, String startTimeB, String endTimeB, Pageable pageable) {
         LocalDateTime startA = getLocalDateTime(startTimeA);
         LocalDateTime startB = getLocalDateTime(startTimeB);
         LocalDateTime endA = getLocalDateTime(endTimeA);
@@ -78,7 +77,7 @@ public class EventService {
         return eventRepository.findByDepartureTimeBetweenAndArrivalTimeBetween(startA, endA, startB, endB, pageable);
     }
 
-    public Event updateEvent(EventUpdateRequest eventUpdateRequest, Long id, String email) {
+    public Event updateEvent(EventUpdateRequest eventUpdateRequest, Long id, String email) throws Throwable {
         Event event = getEvent(id);
         Account account = accountService.getAccount(email);
 
@@ -94,10 +93,10 @@ public class EventService {
         }
         event.setParticipants(accountSet);
 
-        return eventRepository.save(event);
+        return (Event) eventRepository.save(event);
     }
 
-    public void deleteEvent(Long id, String email) {
+    public void deleteEvent(Long id, String email) throws Throwable {
         Account account = accountService.getAccount(email);
 
         Event event = getEvent(id);

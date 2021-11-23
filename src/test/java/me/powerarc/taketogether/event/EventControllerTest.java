@@ -4,10 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import me.powerarc.taketogether.account.Account;
 import me.powerarc.taketogether.account.AccountRepository;
 import me.powerarc.taketogether.account.AccountRole;
+import me.powerarc.taketogether.common.RequestThread;
 import me.powerarc.taketogether.common.RestDocsConfiguration;
 import me.powerarc.taketogether.event.request.EventCreateRequest;
 import me.powerarc.taketogether.event.request.EventUpdateRequest;
 import me.powerarc.taketogether.jwt.JwtTokenProvider;
+import me.powerarc.taketogether.taxi.Taxi;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.modelmapper.ModelMapper;
@@ -75,6 +77,22 @@ class EventControllerTest {
     }
 
     @Test
+    public void getEventAndTaxiById() throws Exception {
+        // Given
+        Account account = makeAccount("test@test.com");
+        Event event = makeTaxi(account, "test", "Incheon", "Seoul");
+        account.addEvent(event);
+        accountRepository.save(account);
+
+        String token = jwtTokenProvider.createToken(account.getEmail());
+        // Then
+        Thread threadEvent = new Thread(new RequestThread("event", token, event, account, mockMvc));
+        Thread threadTaxi = new Thread(new RequestThread("taxi", token, event, account, mockMvc));
+        threadEvent.start();
+        threadTaxi.start();
+    }
+
+    @Test
     public void getEventById() throws Exception {
         // Given
         Account account = makeAccount("test@test.com");
@@ -86,8 +104,8 @@ class EventControllerTest {
 
         // Then
         mockMvc.perform(RestDocumentationRequestBuilders.get("/event/{id}", event.getId())
-                .contentType(MediaType.APPLICATION_JSON)
-                .header("X-AUTH-TOKEN", token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-AUTH-TOKEN", token))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("status", is(HttpStatus.OK.value())))
@@ -138,7 +156,7 @@ class EventControllerTest {
     public void getEventByWrongId() throws Exception {
         // Then
         mockMvc.perform(get("/event/999")
-                .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("status", is(HttpStatus.NOT_FOUND.value())))
@@ -166,10 +184,10 @@ class EventControllerTest {
 
         // Then
         mockMvc.perform(RestDocumentationRequestBuilders.get("/event/name/{name}", event.getName())
-                .contentType(MediaType.APPLICATION_JSON)
-                .header("X-AUTH-TOKEN", token)
-                .param("page", "0")
-                .param("size", "10"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-AUTH-TOKEN", token)
+                        .param("page", "0")
+                        .param("size", "10"))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("status", is(HttpStatus.OK.value())))
@@ -227,7 +245,7 @@ class EventControllerTest {
 
         // Then
         mockMvc.perform(get("/event/name/" + event.getName() + "test")
-                .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("status", is(HttpStatus.OK.value())))
@@ -253,7 +271,7 @@ class EventControllerTest {
 
         // Then
         mockMvc.perform(get("/event/departure/" + departure)
-                .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("status", is(HttpStatus.OK.value())))
@@ -279,7 +297,7 @@ class EventControllerTest {
 
         // Then
         mockMvc.perform(get("/event/destination/" + destination)
-                .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("status", is(HttpStatus.OK.value())))
@@ -302,8 +320,8 @@ class EventControllerTest {
 
         // Then
         mockMvc.perform(post("/event")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(eventCreateRequest)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(eventCreateRequest)))
                 .andDo(print())
                 .andExpect(status().isForbidden())
         ;
@@ -324,9 +342,9 @@ class EventControllerTest {
 
         // Then
         mockMvc.perform(post("/event")
-                .contentType(MediaType.APPLICATION_JSON)
-                .header("X-AUTH-TOKEN", token)
-                .content(objectMapper.writeValueAsString(eventCreateRequest)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-AUTH-TOKEN", token)
+                        .content(objectMapper.writeValueAsString(eventCreateRequest)))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("status", is(HttpStatus.OK.value())))
@@ -396,9 +414,9 @@ class EventControllerTest {
 
         // Then
         mockMvc.perform(post("/event")
-                .contentType(MediaType.APPLICATION_JSON)
-                .header("X-AUTH-TOKEN", token)
-                .content(objectMapper.writeValueAsString(eventCreateRequest)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-AUTH-TOKEN", token)
+                        .content(objectMapper.writeValueAsString(eventCreateRequest)))
                 .andDo(print())
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("status", is(HttpStatus.BAD_REQUEST.value())))
@@ -423,8 +441,8 @@ class EventControllerTest {
 
         // Then
         mockMvc.perform(put("/event/" + event.getId())
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(eventUpdateRequest)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(eventUpdateRequest)))
                 .andDo(print())
                 .andExpect(status().isForbidden())
         ;
@@ -456,9 +474,9 @@ class EventControllerTest {
 
         // Then
         mockMvc.perform(RestDocumentationRequestBuilders.put("/event/{id}", event.getId())
-                .contentType(MediaType.APPLICATION_JSON)
-                .header("X-AUTH-TOKEN", token)
-                .content(objectMapper.writeValueAsString(eventUpdateRequest)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-AUTH-TOKEN", token)
+                        .content(objectMapper.writeValueAsString(eventUpdateRequest)))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("status", is(HttpStatus.OK.value())))
@@ -511,7 +529,7 @@ class EventControllerTest {
         ;
 
         // Given
-        Event byId = eventRepository.findById(event.getId()).get();
+        Event byId = (Event) eventRepository.findById(event.getId()).get();
 
         // Then
         assertThat(byId.getHost().getEmail()).isEqualTo(newAccount.getEmail());
@@ -549,9 +567,9 @@ class EventControllerTest {
 
         // Then
         mockMvc.perform(put("/event/" + event.getId())
-                .contentType(MediaType.APPLICATION_JSON)
-                .header("X-AUTH-TOKEN", token)
-                .content(objectMapper.writeValueAsString(eventUpdateRequest)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-AUTH-TOKEN", token)
+                        .content(objectMapper.writeValueAsString(eventUpdateRequest)))
                 .andDo(print())
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("status", is(HttpStatus.FORBIDDEN.value())))
@@ -579,9 +597,9 @@ class EventControllerTest {
 
         // Then
         mockMvc.perform(put("/event/" + event.getId())
-                .contentType(MediaType.APPLICATION_JSON)
-                .header("X-AUTH-TOKEN", token)
-                .content(objectMapper.writeValueAsString(eventUpdateRequest)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-AUTH-TOKEN", token)
+                        .content(objectMapper.writeValueAsString(eventUpdateRequest)))
                 .andDo(print())
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("status", is(HttpStatus.BAD_REQUEST.value())))
@@ -618,9 +636,9 @@ class EventControllerTest {
 
         // Then
         mockMvc.perform(put("/event/" + event.getId())
-                .contentType(MediaType.APPLICATION_JSON)
-                .header("X-AUTH-TOKEN", token)
-                .content(objectMapper.writeValueAsString(eventUpdateRequest)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-AUTH-TOKEN", token)
+                        .content(objectMapper.writeValueAsString(eventUpdateRequest)))
                 .andDo(print())
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("status", is(HttpStatus.BAD_REQUEST.value())))
@@ -628,7 +646,7 @@ class EventControllerTest {
         ;
 
         // Given
-        Event byId = eventRepository.findById(event.getId()).get();
+        Event byId = (Event) eventRepository.findById(event.getId()).get();
 
         // Then
         assertThat(byId.getHost().getEmail()).isEqualTo(account.getEmail());
@@ -655,14 +673,14 @@ class EventControllerTest {
         Event event = makeEvent(account, "name", "depa", "dest");
 
         mockMvc.perform(delete("/event/" + event.getId())
-                .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isForbidden())
         ;
 
         // Then
         mockMvc.perform(get("/event/" + event.getId())
-                .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("status", is(HttpStatus.OK.value())))
@@ -686,8 +704,8 @@ class EventControllerTest {
         String token = jwtTokenProvider.createToken(email);
 
         mockMvc.perform(RestDocumentationRequestBuilders.delete("/event/{id}", event.getId())
-                .contentType(MediaType.APPLICATION_JSON)
-                .header("X-AUTH-TOKEN", token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-AUTH-TOKEN", token))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("status", is(HttpStatus.OK.value())))
@@ -723,7 +741,7 @@ class EventControllerTest {
 
         // Then
         mockMvc.perform(get("/event/" + event.getId())
-                .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isNotFound());
 
@@ -746,8 +764,8 @@ class EventControllerTest {
         String token = jwtTokenProvider.createToken(email);
 
         mockMvc.perform(delete("/event/" + event.getId())
-                .contentType(MediaType.APPLICATION_JSON)
-                .header("X-AUTH-TOKEN", token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-AUTH-TOKEN", token))
                 .andDo(print())
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("status", is(HttpStatus.FORBIDDEN.value())))
@@ -756,7 +774,7 @@ class EventControllerTest {
 
         // Then
         mockMvc.perform(get("/event/" + event.getId())
-                .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk());
 
@@ -776,9 +794,9 @@ class EventControllerTest {
 
         // Then
         mockMvc.perform(post("/event")
-                .contentType(MediaType.APPLICATION_JSON)
-                .header("X-AUTH-TOKEN", token)
-                .content(objectMapper.writeValueAsString(eventUpdateRequest)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-AUTH-TOKEN", token)
+                        .content(objectMapper.writeValueAsString(eventUpdateRequest)))
                 .andDo(print())
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("status", is(HttpStatus.BAD_REQUEST.value())))
@@ -797,9 +815,9 @@ class EventControllerTest {
 
         // Then
         mockMvc.perform(post("/event")
-                .contentType(MediaType.APPLICATION_JSON)
-                .header("X-AUTH-TOKEN", token)
-                .content(objectMapper.writeValueAsString(eventUpdateRequest)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-AUTH-TOKEN", token)
+                        .content(objectMapper.writeValueAsString(eventUpdateRequest)))
                 .andDo(print())
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("status", is(HttpStatus.BAD_REQUEST.value())))
@@ -821,7 +839,25 @@ class EventControllerTest {
                 .totalNum(4)
                 .build();
 
-        return eventRepository.save(event);
+        return (Event) eventRepository.save(event);
+    }
+
+    private Event makeTaxi(Account account, String name, String departure, String destination) {
+        Taxi taxi = Taxi.builder()
+                .name(name)
+                .departure(departure)
+                .destination(destination)
+                .departureTime(LocalDateTime.of(2021, 10, 12, 8, 0, 1))
+                .arrivalTime(LocalDateTime.of(2021, 10, 12, 8, 45, 1))
+                .host(account)
+                .participants(new HashSet<>(Set.of(account)))
+                .nowNum(1)
+                .price(5000)
+                .totalNum(4)
+                .kind("test")
+                .build();
+
+        return (Event) eventRepository.save(taxi);
     }
 
     private EventUpdateRequest makeEventDto(Long id, String name, String departure, String destination) {

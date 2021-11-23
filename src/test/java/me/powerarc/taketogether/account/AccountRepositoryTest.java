@@ -35,7 +35,7 @@ class AccountRepositoryTest {
         event.setHost(account1);
         Set<Account> participants = event.getParticipants();
         participants.add(account2);
-        event = eventRepository.save(event);
+        event = (Event) eventRepository.save(event);
 
         account1.getHostEvents().add(event);
         account2.getParticipantEvents().add(event);
