@@ -33,9 +33,8 @@ public class TaxiController extends EventController<TaxiCreateRequest, TaxiUpdat
                                          HttpServletRequest request) {
         Page<Event> events = ((TaxiService)eventService).getEventByKind(kind, pageable);
         String userEmail = jwtTokenProvider.getUserEmail(request);
-        EventResource.setClazz(this.getClass());
         PagedModel<EntityModel<Event>> eventResources =
-                pagedResourceAssembler.toModel(events, EventResource::new, userEmail);
+                pagedResourceAssembler.toModel(events, this.getClass(), userEmail);
         return ResponseEntity.ok(EventsResponse.builder()
                 .status(HttpStatus.OK.value())
                 .message("success")

@@ -67,14 +67,11 @@ class AccountRepositoryTest {
     private Event createEvent() {
         Event event = Event.builder()
                 .name("take-together")
-                .departure("incheon")
-                .destination("seoul")
                 .arrivalTime(LocalDateTime.of(2021, 10, 12, 8, 0))
                 .departureTime(LocalDateTime.of(2021, 10, 12, 8, 45))
                 .host(new Account())
                 .participants(new HashSet<>())
                 .nowNum(1)
-                .price(5000)
                 .totalNum(4)
                 .build();
         return event;

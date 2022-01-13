@@ -117,7 +117,7 @@ class EventRepositoryTest {
                 .host(new Account())
                 .participants(new HashSet<>())
                 .nowNum(1)
-                .price(5000)
+                .fare(5000)
                 .totalNum(4)
                 .build();
         return event;
@@ -133,7 +133,7 @@ class EventRepositoryTest {
                 .host(new Account())
                 .participants(new HashSet<>())
                 .nowNum(1)
-                .price(price)
+                .fare(price)
                 .totalNum(4)
                 .build();
         return event;

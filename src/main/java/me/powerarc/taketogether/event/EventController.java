@@ -38,7 +38,7 @@ public class EventController<C extends EventCreateRequest, U extends EventUpdate
         if (eventValidator.validate(eventCreateRequest, errors)) return badRequest(errors);
         String userEmail = jwtTokenProvider.getUserEmail(request);
         Event event = eventService.createEvent(eventCreateRequest, userEmail);
-        EventResource profile = new EventResource(event, userEmail, Link.of("/docs/index.html#resources-events-create").withRel("profile"));
+        EventResource profile = new EventResource(event, userEmail, this.getClass(), Link.of("/docs/index.html#resources-events-create").withRel("profile"));
         return ResponseEntity.ok(EventResponse.builder()
                 .status(HttpStatus.OK.value())
                 .data(profile)
@@ -53,7 +53,7 @@ public class EventController<C extends EventCreateRequest, U extends EventUpdate
         return ResponseEntity.ok().body(EventResponse.builder()
                 .status(HttpStatus.OK.value())
                 .message("success")
-                .data(new EventResource(event, userEmail, Link.of("/docs/index.html#resources-event").withRel("profile"))).build());
+                .data(new EventResource(event, userEmail, this.getClass(), Link.of("/docs/index.html#resources-event").withRel("profile"))).build());
     }
 
     @GetMapping("/name/{name}")
@@ -63,7 +63,7 @@ public class EventController<C extends EventCreateRequest, U extends EventUpdate
         Page events = eventService.getEvent(name, pageable);
         String userEmail = jwtTokenProvider.getUserEmail(request);
         PagedModel eventResources =
-                pagedResourceAssembler.toModel(events, EventResource::new, userEmail);
+                pagedResourceAssembler.toModel(events, this.getClass(), userEmail);
         return ResponseEntity.ok(EventsResponse.builder()
                 .status(HttpStatus.OK.value())
                 .message("success")
@@ -77,7 +77,7 @@ public class EventController<C extends EventCreateRequest, U extends EventUpdate
         Page events = eventService.getEventByDestination(destination, pageable);
         String userEmail = jwtTokenProvider.getUserEmail(request);
         PagedModel eventResources =
-                pagedResourceAssembler.toModel(events, EventResource::new, userEmail);
+                pagedResourceAssembler.toModel(events, this.getClass(), userEmail);
         return ResponseEntity.ok(EventsResponse.builder()
                 .status(HttpStatus.OK.value())
                 .message("success")
@@ -91,7 +91,7 @@ public class EventController<C extends EventCreateRequest, U extends EventUpdate
         Page events = eventService.getEventByDeparture(departure, pageable);
         String userEmail = jwtTokenProvider.getUserEmail(request);
         PagedModel eventResources =
-                pagedResourceAssembler.toModel(events, EventResource::new, userEmail);
+                pagedResourceAssembler.toModel(events, this.getClass(), userEmail);
         return ResponseEntity.ok(EventsResponse.builder()
                 .status(HttpStatus.OK.value())
                 .message("success")
@@ -108,7 +108,7 @@ public class EventController<C extends EventCreateRequest, U extends EventUpdate
         Event event = eventService.updateEvent(eventUpdateRequest, id, userEmail);
         return ResponseEntity.ok(EventResponse.builder()
                 .status(HttpStatus.OK.value())
-                .data(new EventResource(event, userEmail, Link.of("/docs/index.html#resources-events-update").withRel("profile")))
+                .data(new EventResource(event, userEmail, this.getClass(), Link.of("/docs/index.html#resources-events-update").withRel("profile")))
                 .message("success").build());
     }
 
@@ -120,7 +120,7 @@ public class EventController<C extends EventCreateRequest, U extends EventUpdate
         return ResponseEntity.ok().body(EventSuccessResponse.builder()
                 .status(HttpStatus.OK.value())
                 .message("success")
-                .data(new EventResource(userEmail, Link.of("/docs/index.html#resources-events-delete").withRel("profile"))).build());
+                .data(new EventResource(userEmail, this.getClass(), Link.of("/docs/index.html#resources-events-delete").withRel("profile"))).build());
     }
 
     private ResponseEntity badRequest(Errors errors) {

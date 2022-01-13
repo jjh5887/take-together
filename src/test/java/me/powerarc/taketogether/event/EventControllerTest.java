@@ -835,7 +835,7 @@ class EventControllerTest {
                 .host(account)
                 .participants(new HashSet<>(Set.of(account)))
                 .nowNum(1)
-                .price(5000)
+                .fare(5000)
                 .totalNum(4)
                 .build();
 
@@ -852,7 +852,7 @@ class EventControllerTest {
                 .host(account)
                 .participants(new HashSet<>(Set.of(account)))
                 .nowNum(1)
-                .price(5000)
+                .fare(5000)
                 .totalNum(4)
                 .kind("test")
                 .build();
@@ -869,7 +869,7 @@ class EventControllerTest {
                 .arrivalTime(LocalDateTime.of(2021, 10, 12, 8, 45, 1))
                 .host_id(id)
                 .participants_id(new HashSet<>(Set.of(id)))
-                .price(5000)
+                .fare(5000)
                 .totalNum(4)
                 .build();
 
@@ -883,7 +883,7 @@ class EventControllerTest {
                 .destination(destination)
                 .departureTime(LocalDateTime.of(2021, 10, 12, 8, 0, 1))
                 .arrivalTime(LocalDateTime.of(2021, 10, 12, 8, 45, 1))
-                .price(5000)
+                .fare(5000)
                 .totalNum(4)
                 .build();
 

@@ -30,7 +30,7 @@ public class EventCreateRequest {
     @NotNull
     private LocalDateTime arrivalTime;
     @Min(0)
-    private int price;
+    private int fare;
     @Min(2)
     @Max(4)
     private int totalNum;

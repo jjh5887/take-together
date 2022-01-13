@@ -35,7 +35,8 @@ public class Event {
     private String destination;
     private LocalDateTime departureTime;
     private LocalDateTime arrivalTime;
-    private int price;
+    private int fare;
+    private int distance;
     private int totalNum;
     private int nowNum;
 

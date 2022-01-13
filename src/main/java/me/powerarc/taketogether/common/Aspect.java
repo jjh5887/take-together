@@ -9,9 +9,11 @@ import org.springframework.stereotype.Component;
 @org.aspectj.lang.annotation.Aspect
 public class Aspect {
 
-    @Around("execution(* me.powerarc.taketogether..*.*Controller.*(..))")
+    @Around(value = "@annotation(MethodExecutionTime)")
     public synchronized Object setClazz(ProceedingJoinPoint joinPoint) throws Throwable {
-        EventResource.setClazz(joinPoint.getTarget().getClass());
-        return joinPoint.proceed();
+        long start = System.currentTimeMillis();
+        Object proceed = joinPoint.proceed();
+        System.out.println(joinPoint.getSignature().getName() + " 소요시간:" + (System.currentTimeMillis() - start));
+        return proceed;
     }
 }

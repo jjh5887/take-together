@@ -8,6 +8,7 @@ import org.springframework.hateoas.Link;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.hateoas.RepresentationModel;
 import org.springframework.hateoas.server.RepresentationModelAssembler;
+import org.springframework.hateoas.server.mvc.RepresentationModelAssemblerSupport;
 import org.springframework.web.util.UriComponents;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -17,7 +18,13 @@ public class EventPagedResourceAssembler extends PagedResourcesAssembler<Event> 
         super(resolver, baseUri);
     }
 
-    public <R extends RepresentationModel<?>> PagedModel<EntityModel<Event>> toModel(Page<Event> page, RepresentationModelAssembler<Event, R> assembler, String email) {
+    public <R extends RepresentationModel<?>> PagedModel<EntityModel<Event>> toModel(Page<Event> page, Class<?> clazz, String email) {
+        RepresentationModelAssembler<Event, R> assembler = new RepresentationModelAssembler<Event, R>() {
+            @Override
+            public R toModel(Event entity) {
+                return (R) new EventResource(entity, clazz);
+            }
+        };
         PagedModel<R> pagedModel = super.toModel(page, assembler);
         pagedModel.add(Link.of("/docs/index.html#resources-events-list").withRel("profile"));
         if (email != null) {
